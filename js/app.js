@@ -13,10 +13,26 @@ const App = (function() {
     let elements = {};
 
     /**
+     * 모바일 기기 감지
+     */
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+            || (window.innerWidth <= 768 && 'ontouchstart' in window);
+    }
+
+    /**
      * 앱 초기화
      */
     async function init() {
         console.log('🍁 메이플랜드 EXP 트래커 초기화 중...');
+
+        // 모바일 감지
+        if (isMobileDevice()) {
+            document.getElementById('mobileNotice').classList.add('active');
+            document.querySelector('.page-wrapper').classList.add('hidden');
+            console.log('📱 모바일 기기 감지 - PC 접속 안내 표시');
+            return; // 초기화 중단
+        }
 
         // DOM 요소 캐싱
         cacheElements();
