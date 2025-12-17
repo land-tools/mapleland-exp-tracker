@@ -241,7 +241,10 @@ const App = (function() {
         }
 
         isAnalyzing = true;
-        Analyzer.reset();
+        // 처음 시작할 때만 reset, resume 시에는 유지
+        if (!Analyzer.isStarted()) {
+            Analyzer.reset();
+        }
         updateButtonStates();
         updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
         elements.statusText.classList.add('analyzing');

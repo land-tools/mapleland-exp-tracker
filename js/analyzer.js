@@ -22,6 +22,10 @@ const Analyzer = (function() {
     // 마지막 유효한 메소 값 (인벤토리 닫힘 감지용)
     let lastValidGold = null;
 
+    // 마지막 유효한 EXP 값 (OCR 오류 필터링용)
+    let lastValidExp = null;
+    let lastValidPercent = null;
+
     // 현재 분석 결과
     let currentResult = {
         exp: {
@@ -70,6 +74,13 @@ const Analyzer = (function() {
             console.log('메소 초기값 설정:', lastValidGold);
         }
 
+        // EXP 초기값 설정
+        if (data.exp !== null) {
+            lastValidExp = data.exp;
+            lastValidPercent = data.percent;
+            console.log('EXP 초기값 설정:', lastValidExp, '(', lastValidPercent, '%)');
+        }
+
         console.log('분석 시작 - 기준값:', startData);
     }
 
@@ -85,25 +96,6 @@ const Analyzer = (function() {
             return currentResult;
         }
 
-        // 레벨업 감지 (퍼센트가 50% 이상 급감)
-        if (prevData.percent !== null && data.percent !== null) {
-            const percentDrop = prevData.percent - data.percent;
-            if (percentDrop > 50) {
-                console.log('레벨업 감지! 기준값 리셋');
-                currentResult.isLevelUp = true;
-                
-                // 콜백 호출
-                if (typeof onLevelUp === 'function') {
-                    onLevelUp();
-                }
-
-                // 기준값 리셋
-                start(data);
-                prevData = { ...data };
-                return currentResult;
-            }
-        }
-
         currentResult.isLevelUp = false;
 
         // 경과 시간 (밀리초)
@@ -111,27 +103,59 @@ const Analyzer = (function() {
         const elapsedHours = elapsed / 3600000;
         currentResult.elapsed = elapsed;
 
-        // EXP 분석
-        if (data.exp !== null) {
-            currentResult.exp.current = data.exp;
-            currentResult.exp.percent = data.percent;
+        // EXP 분석 (OCR 오류 필터링 적용)
+        let validExp = data.exp;
+        let validPercent = data.percent;
+
+        if (data.exp !== null && lastValidExp !== null) {
+            // 급격한 변화 감지: 이전 값 대비 50% 이상 감소 또는 2배 이상 증가
+            const changeRatio = data.exp / lastValidExp;
+            if (changeRatio < 0.5 || changeRatio > 2) {
+                console.log('OCR 오류 감지 (EXP 급변) - 무시:', data.exp, '(이전값:', lastValidExp + ')');
+                validExp = lastValidExp;
+                validPercent = lastValidPercent;
+            }
+        }
+
+        // 퍼센트 급변 감지 (OCR 오류)
+        if (validPercent !== null && lastValidPercent !== null) {
+            const percentChange = Math.abs(validPercent - lastValidPercent);
+            // 한 번에 10% 이상 변하는 건 비정상 (일반적으로 0.01~0.1% 씩 증가)
+            if (percentChange > 10) {
+                console.log('OCR 오류 감지 (퍼센트 급변) - 무시:', validPercent, '(이전값:', lastValidPercent + ')');
+                validPercent = lastValidPercent;
+            }
+        }
+
+        // 유효한 값 업데이트
+        if (validExp !== null) {
+            lastValidExp = validExp;
+        }
+        if (validPercent !== null) {
+            lastValidPercent = validPercent;
+        }
+
+        // EXP 결과 반영
+        if (validExp !== null) {
+            currentResult.exp.current = validExp;
+            currentResult.exp.percent = validPercent;
             
             if (startData.exp !== null) {
-                currentResult.exp.change = data.exp - startData.exp;
+                currentResult.exp.change = validExp - startData.exp;
                 
                 if (elapsedHours > 0) {
                     currentResult.exp.perHour = Math.round(currentResult.exp.change / elapsedHours);
                 }
             }
 
-            if (startData.percent !== null && data.percent !== null) {
-                currentResult.exp.percentChange = data.percent - startData.percent;
+            if (startData.percent !== null && validPercent !== null) {
+                currentResult.exp.percentChange = validPercent - startData.percent;
             }
 
             // 총 필요 경험치 역산 (현재 EXP / 퍼센트)
-            if (data.percent !== null && data.percent > 0) {
-                currentResult.exp.totalRequired = Math.round(data.exp / (data.percent / 100));
-                currentResult.exp.remaining = currentResult.exp.totalRequired - data.exp;
+            if (validPercent !== null && validPercent > 0) {
+                currentResult.exp.totalRequired = Math.round(validExp / (validPercent / 100));
+                currentResult.exp.remaining = currentResult.exp.totalRequired - validExp;
 
                 // 레벨업까지 예상 시간 계산
                 if (currentResult.exp.perHour && currentResult.exp.perHour > 0) {
@@ -196,6 +220,8 @@ const Analyzer = (function() {
         };
 
         lastValidGold = null;
+        lastValidExp = null;
+        lastValidPercent = null;
 
         currentResult = {
             exp: {
@@ -385,11 +411,16 @@ const Analyzer = (function() {
         const absNum = Math.abs(num);
         const sign = num >= 0 ? '+' : '-';
         
-        if (absNum >= 1000000000) {
-            return sign + (absNum / 1000000000).toFixed(1) + 'B';
-        } else if (absNum >= 1000000) {
-            return sign + (absNum / 1000000).toFixed(1) + 'M';
+        // 한국어 스타일: 만, 억 단위 사용
+        if (absNum >= 100000000) {
+            // 1억 이상: 억 단위
+            return sign + (absNum / 100000000).toFixed(1) + '억';
+        } else if (absNum >= 10000) {
+            // 1만 이상: 만 단위 (소수점 없이 10만 단위까지 표시)
+            const man = Math.round(absNum / 10000);
+            return sign + man + '만';
         } else if (absNum >= 1000) {
+            // 1천 이상: K 단위
             return sign + (absNum / 1000).toFixed(1) + 'K';
         }
         return sign + absNum.toString();
