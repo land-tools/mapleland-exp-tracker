@@ -95,6 +95,9 @@
             <button id="btnClearAll" class="btn btn-secondary btn-small">
                 <span class="icon">🗑️</span> 전체 초기화
             </button>
+            <button id="btnHistory" class="btn btn-secondary btn-small">
+                <span class="icon">📋</span> 기록 보기
+            </button>
         </div>
 
         <div class="status-bar">
@@ -162,6 +165,44 @@
                 </div>
             </div>
         </aside>
+    </div>
+
+    <!-- 사냥 기록 모달 -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📋 사냥 기록</h2>
+                <button class="modal-close" id="btnCloseModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="history-table-wrapper">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>날짜</th>
+                                <th>시간</th>
+                                <th>EXP</th>
+                                <th>EXP/시간</th>
+                                <th>메소</th>
+                                <th>메소/시간</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- 기록이 여기에 동적으로 추가됨 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="history-empty" id="historyEmpty">
+                    <p>저장된 기록이 없습니다.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnClearHistory" class="btn btn-danger btn-small">
+                    <span class="icon">🗑️</span> 전체 삭제
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Hidden elements for PIP -->

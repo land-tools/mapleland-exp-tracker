@@ -5,6 +5,7 @@
 
 const Storage = (function() {
     const STORAGE_KEY = 'mapleland_exp_tracker';
+    const HISTORY_KEY = 'mapleland_hunt_history';
 
     /**
      * 기본 설정값
@@ -107,6 +108,89 @@ const Storage = (function() {
         return settings.regions.exp !== null || settings.regions.gold !== null;
     }
 
+    // ==================== 사냥 기록 관리 ====================
+
+    /**
+     * 사냥 기록 저장
+     * @param {Object} record - 사냥 기록 객체
+     * @returns {boolean}
+     */
+    function saveRecord(record) {
+        try {
+            const history = loadHistory();
+            history.unshift(record); // 최신 기록을 맨 앞에
+            
+            // 최대 100개까지만 저장
+            if (history.length > 100) {
+                history.pop();
+            }
+            
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            console.log('사냥 기록 저장됨:', record);
+            return true;
+        } catch (error) {
+            console.error('사냥 기록 저장 실패:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 전체 사냥 기록 불러오기
+     * @returns {Array}
+     */
+    function loadHistory() {
+        try {
+            const data = localStorage.getItem(HISTORY_KEY);
+            if (data) {
+                return JSON.parse(data);
+            }
+        } catch (error) {
+            console.error('사냥 기록 불러오기 실패:', error);
+        }
+        return [];
+    }
+
+    /**
+     * 개별 사냥 기록 삭제
+     * @param {number} id - 기록 ID (timestamp)
+     * @returns {boolean}
+     */
+    function deleteRecord(id) {
+        try {
+            const history = loadHistory();
+            const filtered = history.filter(record => record.id !== id);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+            console.log('사냥 기록 삭제됨:', id);
+            return true;
+        } catch (error) {
+            console.error('사냥 기록 삭제 실패:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 전체 사냥 기록 삭제
+     * @returns {boolean}
+     */
+    function clearHistory() {
+        try {
+            localStorage.removeItem(HISTORY_KEY);
+            console.log('전체 사냥 기록 삭제됨');
+            return true;
+        } catch (error) {
+            console.error('전체 사냥 기록 삭제 실패:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 사냥 기록 개수
+     * @returns {number}
+     */
+    function getHistoryCount() {
+        return loadHistory().length;
+    }
+
     return {
         save,
         load,
@@ -114,7 +198,13 @@ const Storage = (function() {
         loadRegion,
         loadAllRegions,
         clear,
-        hasSettings
+        hasSettings,
+        // 사냥 기록
+        saveRecord,
+        loadHistory,
+        deleteRecord,
+        clearHistory,
+        getHistoryCount
     };
 })();
 

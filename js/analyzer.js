@@ -314,6 +314,87 @@ const Analyzer = (function() {
         return startData.timestamp !== null;
     }
 
+    /**
+     * 날짜/시간 포맷팅
+     * @param {number} timestamp
+     * @returns {string} YYYY-MM-DD HH:mm:ss
+     */
+    function formatDateTime(timestamp) {
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    /**
+     * 현재 세션 기록 생성
+     * @returns {Object|null} 기록 객체 또는 null (유효하지 않은 경우)
+     */
+    function createSessionRecord() {
+        if (!startData.timestamp) {
+            console.log('세션 기록 생성 실패: 시작 데이터 없음');
+            return null;
+        }
+
+        const endTime = Date.now();
+        const durationMs = endTime - startData.timestamp;
+        const durationMinutes = Math.floor(durationMs / 60000);
+
+        // 최소 10초 이상이어야 기록 (테스트용, 실제 운영시 1분으로 변경 권장)
+        const durationSeconds = Math.floor(durationMs / 1000);
+        if (durationSeconds < 10) {
+            console.log('세션 기록 생성 실패: 사냥 시간이 10초 미만');
+            return null;
+        }
+
+        const record = {
+            id: startData.timestamp, // 시작 시간을 고유 ID로 사용
+            startTime: formatDateTime(startData.timestamp),
+            endTime: formatDateTime(endTime),
+            duration: durationMinutes,
+            exp: {
+                start: startData.exp,
+                end: currentResult.exp.current,
+                gained: currentResult.exp.change || 0,
+                perHour: currentResult.exp.perHour || 0
+            },
+            meso: {
+                start: startData.gold,
+                end: currentResult.gold.current,
+                gained: currentResult.gold.change || 0,
+                perHour: currentResult.gold.perHour || 0
+            }
+        };
+
+        console.log('세션 기록 생성:', record);
+        return record;
+    }
+
+    /**
+     * 숫자 축약 포맷 (K, M, B)
+     * @param {number} num
+     * @returns {string}
+     */
+    function formatCompact(num) {
+        if (num === null || num === undefined) return '-';
+        
+        const absNum = Math.abs(num);
+        const sign = num >= 0 ? '+' : '-';
+        
+        if (absNum >= 1000000000) {
+            return sign + (absNum / 1000000000).toFixed(1) + 'B';
+        } else if (absNum >= 1000000) {
+            return sign + (absNum / 1000000).toFixed(1) + 'M';
+        } else if (absNum >= 1000) {
+            return sign + (absNum / 1000).toFixed(1) + 'K';
+        }
+        return sign + absNum.toString();
+    }
+
     return {
         start,
         analyze,
@@ -322,10 +403,13 @@ const Analyzer = (function() {
         formatTimeEstimate,
         formatNumber,
         formatChange,
+        formatCompact,
+        formatDateTime,
         setOnLevelUp,
         getCurrentResult,
         getStartData,
-        isStarted
+        isStarted,
+        createSessionRecord
     };
 })();
 

@@ -84,7 +84,14 @@ const App = (function() {
             goldChange: document.getElementById('goldChange'),
             goldPerHour: document.getElementById('goldPerHour'),
             intervalSelect: document.getElementById('intervalSelect'),
-            btnClearAll: document.getElementById('btnClearAll')
+            btnClearAll: document.getElementById('btnClearAll'),
+            // 기록 모달
+            btnHistory: document.getElementById('btnHistory'),
+            historyModal: document.getElementById('historyModal'),
+            btnCloseModal: document.getElementById('btnCloseModal'),
+            historyTableBody: document.getElementById('historyTableBody'),
+            historyEmpty: document.getElementById('historyEmpty'),
+            btnClearHistory: document.getElementById('btnClearHistory')
         };
     }
 
@@ -181,6 +188,18 @@ const App = (function() {
                 updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
             }
         });
+
+        // 기록 모달
+        elements.btnHistory.addEventListener('click', openHistoryModal);
+        elements.btnCloseModal.addEventListener('click', closeHistoryModal);
+        elements.btnClearHistory.addEventListener('click', handleClearHistory);
+        
+        // 모달 외부 클릭시 닫기
+        elements.historyModal.addEventListener('click', (e) => {
+            if (e.target === elements.historyModal) {
+                closeHistoryModal();
+            }
+        });
     }
 
     /**
@@ -249,6 +268,13 @@ const App = (function() {
      * 분석 중지
      */
     function stopAnalysis() {
+        // 세션 기록 저장 (중지 전에)
+        const record = Analyzer.createSessionRecord();
+        if (record) {
+            Storage.saveRecord(record);
+            console.log('📝 사냥 기록 저장됨:', record);
+        }
+
         isAnalyzing = false;
         
         if (analysisInterval) {
@@ -444,6 +470,96 @@ const App = (function() {
                 `${regions.gold.width}x${regions.gold.height} @ (${regions.gold.x}, ${regions.gold.y})`;
         } else {
             elements.goldRegionInfo.textContent = '미설정';
+        }
+    }
+
+    /**
+     * 기록 모달 열기
+     */
+    function openHistoryModal() {
+        renderHistoryTable();
+        elements.historyModal.classList.add('active');
+    }
+
+    /**
+     * 기록 모달 닫기
+     */
+    function closeHistoryModal() {
+        elements.historyModal.classList.remove('active');
+    }
+
+    /**
+     * 기록 테이블 렌더링
+     */
+    function renderHistoryTable() {
+        const history = Storage.loadHistory();
+        
+        if (history.length === 0) {
+            elements.historyTableBody.innerHTML = '';
+            elements.historyEmpty.classList.add('active');
+            document.querySelector('.history-table-wrapper').style.display = 'none';
+            return;
+        }
+
+        elements.historyEmpty.classList.remove('active');
+        document.querySelector('.history-table-wrapper').style.display = 'block';
+
+        elements.historyTableBody.innerHTML = history.map(record => {
+            // 날짜 포맷: MM/DD HH:mm
+            const startDate = new Date(record.id);
+            const dateStr = `${String(startDate.getMonth() + 1).padStart(2, '0')}/${String(startDate.getDate()).padStart(2, '0')} ${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`;
+            
+            // 시간 포맷 (분 단위가 0이면 초 단위로 표시)
+            let durationStr;
+            if (record.duration >= 60) {
+                durationStr = `${Math.floor(record.duration / 60)}시간 ${record.duration % 60}분`;
+            } else if (record.duration > 0) {
+                durationStr = `${record.duration}분`;
+            } else {
+                // 1분 미만인 경우 (10초 이상)
+                durationStr = '1분 미만';
+            }
+
+            // EXP/메소 포맷
+            const expStr = Analyzer.formatCompact(record.exp.gained);
+            const expPerHourStr = record.exp.perHour ? Analyzer.formatCompact(record.exp.perHour) : '-';
+            const mesoStr = record.meso.gained ? Analyzer.formatCompact(record.meso.gained) : '-';
+            const mesoPerHourStr = record.meso.perHour ? Analyzer.formatCompact(record.meso.perHour) : '-';
+
+            return `
+                <tr>
+                    <td>${dateStr}</td>
+                    <td class="duration">${durationStr}</td>
+                    <td class="exp-value">${expStr}</td>
+                    <td class="exp-value">${expPerHourStr}</td>
+                    <td class="meso-value">${mesoStr}</td>
+                    <td class="meso-value">${mesoPerHourStr}</td>
+                    <td>
+                        <button class="delete-btn" data-id="${record.id}" title="삭제">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // 삭제 버튼 이벤트 바인딩
+        elements.historyTableBody.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.target.dataset.id, 10);
+                if (confirm('이 기록을 삭제하시겠습니까?')) {
+                    Storage.deleteRecord(id);
+                    renderHistoryTable();
+                }
+            });
+        });
+    }
+
+    /**
+     * 전체 기록 삭제
+     */
+    function handleClearHistory() {
+        if (confirm('모든 사냥 기록을 삭제하시겠습니까?')) {
+            Storage.clearHistory();
+            renderHistoryTable();
         }
     }
 
