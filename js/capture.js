@@ -56,11 +56,38 @@ const CaptureModule = (function() {
 
             // 비디오 요소에 스트림 연결
             videoElement.srcObject = mediaStream;
+
+            // 비디오 메타데이터 로드 대기
+            await new Promise((resolve) => {
+                if (videoElement.readyState >= 2) {
+                    // 이미 로드됨
+                    resolve();
+                } else {
+                    videoElement.addEventListener('loadedmetadata', resolve, { once: true });
+                }
+            });
+
             await videoElement.play();
 
-            // 비디오 크기 가져오기
+            // 비디오 크기 가져오기 (메타데이터 로드 후)
             videoWidth = videoElement.videoWidth;
             videoHeight = videoElement.videoHeight;
+
+            // 비디오 크기가 0이면 추가 대기
+            if (videoWidth === 0 || videoHeight === 0) {
+                await new Promise((resolve) => {
+                    const checkSize = () => {
+                        if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+                            videoWidth = videoElement.videoWidth;
+                            videoHeight = videoElement.videoHeight;
+                            resolve();
+                        } else {
+                            requestAnimationFrame(checkSize);
+                        }
+                    };
+                    checkSize();
+                });
+            }
 
             // 캔버스 크기 설정 (컨테이너에 맞춤)
             const container = previewCanvas.parentElement;

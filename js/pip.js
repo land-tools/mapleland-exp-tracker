@@ -252,15 +252,10 @@ const PIPModule = (function() {
         }
 
         try {
-            // 메소 표시 여부에 따라 초기 높이 설정 (버튼 오버레이라 높이 축소)
-            const baseHeight = 125;
-            const goldHeight = 65;
-            const initialHeight = showGold ? baseHeight + goldHeight : baseHeight;
-
-            // PIP 창 열기
+            // PIP 창 열기 (초기에는 넉넉하게, 내용 렌더링 후 조절)
             pipWindow = await window.documentPictureInPicture.requestWindow({
                 width: 240,
-                height: initialHeight
+                height: 250
             });
 
             // 스타일 추가
@@ -292,6 +287,11 @@ const PIPModule = (function() {
             // 초기 버튼 상태 설정
             updateToggleButton();
             updateGoldVisibility();
+
+            // 내용 렌더링 후 실제 크기에 맞게 조절 (여러 번 시도)
+            setTimeout(() => fitPIPToContent(), 50);
+            setTimeout(() => fitPIPToContent(), 150);
+            setTimeout(() => fitPIPToContent(), 300);
 
             // PIP 창 닫힘 이벤트
             pipWindow.addEventListener('pagehide', () => {
@@ -465,22 +465,70 @@ const PIPModule = (function() {
     }
 
     /**
-     * PIP 창 크기 조절
+     * PIP 창을 내용에 맞게 크기 조절
+     */
+    function fitPIPToContent() {
+        if (!isPIPOpen()) return;
+
+        try {
+            const doc = pipWindow.document;
+            const body = doc.body;
+            const container = doc.querySelector('.pip-container');
+            
+            if (!container) return;
+            
+            // 방법 1: body의 scrollHeight 사용
+            let contentHeight = body.scrollHeight;
+            
+            // 방법 2: container의 getBoundingClientRect 사용 (더 정확)
+            const rect = container.getBoundingClientRect();
+            if (rect.height > 0) {
+                contentHeight = Math.ceil(rect.height);
+            }
+            
+            // 방법 3: 마지막 visible 요소의 bottom 위치 계산
+            const allElements = container.querySelectorAll('.section, .divider, .levelup-alert');
+            let maxBottom = 0;
+            allElements.forEach(el => {
+                if (el.style.display !== 'none' && el.offsetParent !== null) {
+                    const elRect = el.getBoundingClientRect();
+                    const bottom = el.offsetTop + el.offsetHeight;
+                    if (bottom > maxBottom) {
+                        maxBottom = bottom;
+                    }
+                }
+            });
+            
+            if (maxBottom > 0) {
+                contentHeight = maxBottom;
+            }
+            
+            // 여유 공간 추가 (+28px)
+            contentHeight += 32;
+            
+            // 최소/최대 높이 제한
+            contentHeight = Math.max(contentHeight, 80);
+            contentHeight = Math.min(contentHeight, 400);
+            
+            // 창 크기 조절
+            pipWindow.resizeTo(240, contentHeight);
+            
+            console.log('PIP 크기 조절:', 240, 'x', contentHeight);
+        } catch (e) {
+            console.log('PIP 창 크기 조절 불가:', e);
+        }
+    }
+
+    /**
+     * PIP 창 크기 조절 (메소 토글 시)
      */
     function resizePIPWindow() {
         if (!isPIPOpen()) return;
 
-        try {
-            // EXP만: 125px, EXP+메소: 190px (버튼 오버레이라 높이 축소)
-            const baseHeight = 125;
-            const goldHeight = 65;
-            const newHeight = showGold ? baseHeight + goldHeight : baseHeight;
-            
-            pipWindow.resizeTo(240, newHeight);
-        } catch (e) {
-            // resizeTo가 지원되지 않는 경우 무시
-            console.log('PIP 창 크기 조절 불가:', e);
-        }
+        // 약간의 딜레이 후 콘텐츠 크기에 맞게 조절
+        requestAnimationFrame(() => {
+            fitPIPToContent();
+        });
     }
 
     /**

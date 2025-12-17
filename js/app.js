@@ -7,7 +7,7 @@ const App = (function() {
     // 상태
     let isAnalyzing = false;
     let analysisInterval = null;
-    let currentInterval = 5000; // 기본 5초
+    let currentInterval = 1000; // 기본 1초
 
     // DOM 요소
     let elements = {};
@@ -173,16 +173,21 @@ const App = (function() {
     async function handleSelectScreen() {
         updateStatus('화면 선택 중...');
         
+        // 먼저 프리뷰 영역을 보이게 설정 (크기 측정을 위해)
+        elements.previewWrapper.classList.add('active');
+        elements.previewPlaceholder.classList.add('hidden');
+        
         const success = await CaptureModule.startCapture();
         
         if (success) {
-            elements.previewWrapper.classList.add('active');
-            elements.previewPlaceholder.classList.add('hidden');
             updateStatus('화면 캡처 중');
             
             // 저장된 영역이 있으면 인디케이터 업데이트
             RegionSelector.updateIndicators();
         } else {
+            // 실패 시 다시 숨김
+            elements.previewWrapper.classList.remove('active');
+            elements.previewPlaceholder.classList.remove('hidden');
             updateStatus('화면 선택 취소됨');
         }
         

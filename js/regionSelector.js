@@ -188,7 +188,7 @@ const RegionSelector = (function() {
             indicator.style.top = screenCoords.y + 'px';
             indicator.style.width = screenSize.width + 'px';
             indicator.style.height = screenSize.height + 'px';
-            indicator.textContent = type === 'exp' ? 'EXP' : 'GOLD';
+            indicator.textContent = type === 'exp' ? 'EXP' : 'MESO';
 
             indicatorsContainer.appendChild(indicator);
         });
