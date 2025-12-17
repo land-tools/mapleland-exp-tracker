@@ -194,9 +194,24 @@ body {
     transform: translateY(-2px);
 }
 
+.btn-accent {
+    background: linear-gradient(135deg, #00b894, #00cec9);
+    color: var(--text-primary);
+}
+
+.btn-accent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+}
+
 .btn-small {
     padding: 8px 12px;
     font-size: 12px;
+}
+
+.btn.selecting {
+    background: var(--accent-primary) !important;
+    animation: pulse 1s ease-in-out infinite;
 }
 
 /* Controls */
@@ -303,6 +318,12 @@ body {
     color: var(--accent-gold);
 }
 
+.region-indicator.map {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+}
+
 /* Region Info */
 .region-info {
     display: flex;
@@ -327,6 +348,25 @@ body {
 .region-value {
     color: var(--text-primary);
     font-weight: 500;
+}
+
+.region-value.map-name {
+    color: var(--accent-exp);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.region-coords {
+    font-size: 12px;
+}
+
+.region-coords .region-item {
+    padding: 8px 12px;
+}
+
+.region-coords .region-value {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
 }
 
 /* Action Controls */

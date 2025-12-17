@@ -76,6 +76,7 @@ const App = (function() {
             previewPlaceholder: document.getElementById('previewPlaceholder'),
             expRegionInfo: document.getElementById('expRegionInfo'),
             goldRegionInfo: document.getElementById('goldRegionInfo'),
+            autoDetectBtn: document.getElementById('btnAutoDetect'),
             statusText: document.getElementById('statusText'),
             elapsedTime: document.getElementById('elapsedTime'),
             ocrStatus: document.getElementById('ocrStatus'),
@@ -116,6 +117,11 @@ const App = (function() {
     function bindEvents() {
         // 화면 선택
         elements.btnSelectScreen.addEventListener('click', handleSelectScreen);
+
+        // 자동 감지 버튼
+        if (elements.autoDetectBtn) {
+            elements.autoDetectBtn.addEventListener('click', runAutoDetect);
+        }
 
         // 영역 선택
         elements.btnSelectExp.addEventListener('click', () => {
@@ -211,6 +217,14 @@ const App = (function() {
             
             // 저장된 영역이 있으면 인디케이터 업데이트
             RegionSelector.updateIndicators();
+            
+            // OCR이 준비되었으면 자동 감지 실행
+            if (OCRModule.getIsInitialized()) {
+                // 약간의 딜레이 후 자동 감지 (화면이 안정화되도록)
+                setTimeout(() => {
+                    runAutoDetect();
+                }, 500);
+            }
         } else {
             // 실패 시 다시 숨김
             elements.previewWrapper.classList.remove('active');
@@ -219,6 +233,60 @@ const App = (function() {
         }
         
         updateButtonStates();
+    }
+
+    /**
+     * 자동 영역 감지 실행
+     */
+    async function runAutoDetect() {
+        if (!CaptureModule.getIsCapturing()) {
+            alert('먼저 화면을 선택해주세요.');
+            return;
+        }
+
+        updateStatus('영역 자동 감지 중...');
+
+        try {
+            // 현재 프레임 캡처
+            const frame = CaptureModule.captureFrame();
+            if (!frame) {
+                updateStatus('프레임 캡처 실패');
+                return;
+            }
+
+            // 자동 감지 실행
+            const results = await AutoDetect.detectAll(frame.canvas);
+
+            // 감지된 영역 적용
+            if (results.exp) {
+                RegionSelector.setRegion('exp', results.exp);
+                Storage.saveRegion('exp', results.exp);
+                console.log('EXP 영역 자동 설정:', results.exp);
+            }
+
+            if (results.gold) {
+                RegionSelector.setRegion('gold', results.gold);
+                Storage.saveRegion('gold', results.gold);
+                console.log('메소 영역 자동 설정:', results.gold);
+            }
+
+            // UI 업데이트
+            updateRegionInfo();
+            updateButtonStates();
+            RegionSelector.updateIndicators();
+
+            // 결과 메시지
+            const detectedCount = [results.exp, results.gold].filter(Boolean).length;
+            if (detectedCount > 0) {
+                updateStatus(`자동 감지 완료 (${detectedCount}개 영역)`);
+            } else {
+                updateStatus('자동 감지 실패 - 수동으로 선택해주세요');
+            }
+
+        } catch (error) {
+            console.error('자동 감지 오류:', error);
+            updateStatus('자동 감지 실패');
+        }
     }
 
     /**
@@ -440,6 +508,11 @@ const App = (function() {
         elements.btnStart.disabled = !isCapturing || !allRegionsSet || !ocrReady || isAnalyzing;
         elements.btnStop.disabled = !isAnalyzing;
         elements.btnPip.disabled = false;
+        
+        // 자동 감지 버튼
+        if (elements.autoDetectBtn) {
+            elements.autoDetectBtn.disabled = !isCapturing || !ocrReady;
+        }
     }
 
     /**
@@ -468,6 +541,7 @@ const App = (function() {
         } else {
             elements.goldRegionInfo.textContent = '미설정';
         }
+
     }
 
     /**

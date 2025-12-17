@@ -173,6 +173,11 @@ const RegionSelector = (function() {
     function updateIndicators() {
         indicatorsContainer.innerHTML = '';
 
+        const labels = {
+            exp: 'EXP',
+            gold: 'MESO'
+        };
+
         Object.entries(regions).forEach(([type, region]) => {
             if (!region) return;
 
@@ -188,7 +193,7 @@ const RegionSelector = (function() {
             indicator.style.top = screenCoords.y + 'px';
             indicator.style.width = screenSize.width + 'px';
             indicator.style.height = screenSize.height + 'px';
-            indicator.textContent = type === 'exp' ? 'EXP' : 'MESO';
+            indicator.textContent = labels[type] || type.toUpperCase();
 
             indicatorsContainer.appendChild(indicator);
         });
@@ -201,15 +206,15 @@ const RegionSelector = (function() {
         const btnSelectExp = document.getElementById('btnSelectExp');
         const btnSelectGold = document.getElementById('btnSelectGold');
 
+        // 모든 버튼 selecting 클래스 제거
+        btnSelectExp.classList.remove('selecting');
+        btnSelectGold.classList.remove('selecting');
+
+        // 현재 선택 중인 버튼에만 클래스 추가
         if (currentType === 'exp') {
             btnSelectExp.classList.add('selecting');
-            btnSelectGold.classList.remove('selecting');
         } else if (currentType === 'gold') {
-            btnSelectExp.classList.remove('selecting');
             btnSelectGold.classList.add('selecting');
-        } else {
-            btnSelectExp.classList.remove('selecting');
-            btnSelectGold.classList.remove('selecting');
         }
     }
 
