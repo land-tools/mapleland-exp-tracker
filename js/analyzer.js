@@ -169,24 +169,50 @@ const Analyzer = (function() {
 
         // 메소 분석
         // 메소는 사냥 중 줄어들지 않는다고 가정
-        // 항상 최대값(가장 큰 값)을 유지
+        // 급격한 변화는 잘못된 인식으로 판단
         if (data.gold !== null && data.gold > 0) {
-            // 현재 인식된 값이 마지막 유효값보다 크거나 같으면 업데이트
-            if (lastValidGold === null || data.gold >= lastValidGold) {
+            // 첫 인식
+            if (lastValidGold === null) {
                 lastValidGold = data.gold;
-                goldIgnoreCount = 0; // 카운터 리셋
-                console.log('메소 업데이트:', lastValidGold);
-            } else {
-                // 값이 줄어들면 무시 (인벤토리 닫힘 또는 잘못된 인식)
+                goldIgnoreCount = 0;
+                console.log('메소 초기값:', lastValidGold);
+            } 
+            // 비슷한 값 (10% 이내 변화) - 바로 업데이트
+            else if (Math.abs(data.gold - lastValidGold) / lastValidGold <= 0.1) {
+                if (data.gold >= lastValidGold) {
+                    lastValidGold = data.gold;
+                    console.log('메소 업데이트 (정상 범위):', lastValidGold);
+                }
+                goldIgnoreCount = 0;
+            }
+            // 적당한 증가 (10%~3배) - 바로 업데이트
+            else if (data.gold > lastValidGold && data.gold <= lastValidGold * 3) {
+                lastValidGold = data.gold;
+                goldIgnoreCount = 0;
+                console.log('메소 업데이트 (증가):', lastValidGold);
+            }
+            // 급격한 증가 (3배 초과) - 잘못된 인식 가능성, 5회 연속 확인 필요
+            else if (data.gold > lastValidGold * 3) {
+                goldIgnoreCount++;
+                console.log('메소 급증 무시 - 유효값 유지:', lastValidGold, '(인식값:', data.gold, ', 무시횟수:', goldIgnoreCount + ')');
+                
+                if (goldIgnoreCount >= 5) {
+                    console.log('메소 5회 연속 급증 - 새 값으로 교체:', data.gold);
+                    lastValidGold = data.gold;
+                    goldIgnoreCount = 0;
+                }
+            }
+            // 감소 - 잘못된 인식, 5회 연속 확인 필요
+            else {
                 goldIgnoreCount++;
                 console.log('메소 감소 무시 - 유효값 유지:', lastValidGold, '(인식값:', data.gold, ', 무시횟수:', goldIgnoreCount + ')');
                 
-                // 5번 연속 무시되면 기존 값이 잘못됐다고 판단, 새 값 채택
-                // 단, 시작 메소보다 작아지는 방향으로는 업데이트 안함 (인벤토리 닫힘 방지)
+                // 5번 연속 무시되면 기존 값이 잘못됐다고 판단
+                // 단, 시작 메소보다 작아지는 방향으로는 업데이트 안함
                 if (goldIgnoreCount >= 5) {
                     if (startData.gold !== null && data.gold < startData.gold) {
                         console.log('메소 5회 연속 무시 - 시작값보다 작아 교체 안함 (시작:', startData.gold, ', 인식:', data.gold + ')');
-                        goldIgnoreCount = 0; // 카운터만 리셋
+                        goldIgnoreCount = 0;
                     } else {
                         console.log('메소 5회 연속 무시 - 새 값으로 교체:', data.gold);
                         lastValidGold = data.gold;
