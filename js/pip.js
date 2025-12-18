@@ -140,19 +140,15 @@ const PIPModule = (function() {
             .btn:active {
                 transform: scale(0.9);
             }
-            .btn-play {
+            .btn-toggle {
                 background: ${COLORS.playBtn};
                 color: white;
                 width: 28px;
                 height: 28px;
                 font-size: 12px;
             }
-            .btn-pause {
+            .btn-toggle.playing {
                 background: ${COLORS.pauseBtn};
-                color: white;
-                width: 28px;
-                height: 28px;
-                font-size: 12px;
             }
             .btn-stop {
                 background: #dc3545;
@@ -241,8 +237,7 @@ const PIPModule = (function() {
                 </div>
                 
                 <div class="controls">
-                    <button class="btn btn-play" id="pipBtnPlay" title="시작/재개">▶</button>
-                    <button class="btn btn-pause" id="pipBtnPause" title="일시정지">⏸</button>
+                    <button class="btn btn-toggle" id="pipBtnToggle" title="시작/일시정지">▶</button>
                     <button class="btn btn-stop" id="pipBtnStop" title="정지">⏹</button>
                     <button class="btn btn-gold" id="pipBtnGold" title="메소 표시/숨김">💰</button>
                 </div>
@@ -277,17 +272,17 @@ const PIPModule = (function() {
             pipWindow.document.body.innerHTML = createHTML();
 
             // 버튼 이벤트 연결
-            const btnPlay = pipWindow.document.getElementById('pipBtnPlay');
-            const btnPause = pipWindow.document.getElementById('pipBtnPause');
+            const btnToggle = pipWindow.document.getElementById('pipBtnToggle');
             const btnStop = pipWindow.document.getElementById('pipBtnStop');
             const btnGold = pipWindow.document.getElementById('pipBtnGold');
 
-            btnPlay.addEventListener('click', () => {
-                if (typeof onPlay === 'function') onPlay();
-            });
-
-            btnPause.addEventListener('click', () => {
-                if (typeof onPause === 'function') onPause();
+            btnToggle.addEventListener('click', () => {
+                // 현재 상태에 따라 시작 또는 일시정지
+                if (btnToggle.classList.contains('playing')) {
+                    if (typeof onPause === 'function') onPause();
+                } else {
+                    if (typeof onPlay === 'function') onPlay();
+                }
             });
 
             btnStop.addEventListener('click', () => {
@@ -442,11 +437,11 @@ const PIPModule = (function() {
             if (isAnalyzing) {
                 btnToggle.textContent = '⏸';
                 btnToggle.classList.add('playing');
-                btnToggle.title = '정지';
+                btnToggle.title = '일시정지';
             } else {
                 btnToggle.textContent = '▶';
                 btnToggle.classList.remove('playing');
-                btnToggle.title = '시작';
+                btnToggle.title = '시작/재개';
             }
         }
     }
