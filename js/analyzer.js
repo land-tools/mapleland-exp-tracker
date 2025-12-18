@@ -99,8 +99,9 @@ const Analyzer = (function() {
 
         currentResult.isLevelUp = false;
 
-        // 경과 시간 (밀리초)
-        const elapsed = Date.now() - startData.timestamp;
+        // 경과 시간 (밀리초) - 일시정지 시간 제외
+        const pausedTime = data.pausedTime || 0;
+        const elapsed = Date.now() - startData.timestamp - pausedTime;
         const elapsedHours = elapsed / 3600000;
         currentResult.elapsed = elapsed;
 

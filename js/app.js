@@ -7,6 +7,8 @@ const App = (function() {
     // 상태
     let isAnalyzing = false;  // 분석 활성화 (시작됨)
     let isPaused = false;     // 일시정지 상태
+    let pausedAt = null;      // 일시정지 시점 (timestamp)
+    let totalPausedTime = 0;  // 총 일시정지 시간 (ms)
     let analysisInterval = null;
     let currentInterval = 1000; // 기본 1초
 
@@ -357,6 +359,12 @@ const App = (function() {
 
         // 일시정지 상태에서 재개
         if (isPaused) {
+            // 일시정지 시간 누적
+            if (pausedAt) {
+                totalPausedTime += Date.now() - pausedAt;
+                pausedAt = null;
+            }
+            
             isPaused = false;
             updateButtonStates();
             updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
@@ -374,6 +382,8 @@ const App = (function() {
         // 처음 시작
         isAnalyzing = true;
         isPaused = false;
+        totalPausedTime = 0; // 일시정지 시간 초기화
+        pausedAt = null;
         
         // 처음 시작할 때만 reset
         if (!Analyzer.isStarted()) {
@@ -401,6 +411,7 @@ const App = (function() {
         if (!isAnalyzing || isPaused) return;
 
         isPaused = true;
+        pausedAt = Date.now(); // 일시정지 시점 저장
         
         if (analysisInterval) {
             clearInterval(analysisInterval);
@@ -480,11 +491,12 @@ const App = (function() {
                 goldResult = await OCRModule.recognizeGold(goldCanvas);
             }
 
-            // 분석
+            // 분석 (일시정지 시간 전달)
             const analysisResult = Analyzer.analyze({
                 exp: expResult.exp,
                 percent: expResult.percent,
-                gold: goldResult.gold
+                gold: goldResult.gold,
+                pausedTime: totalPausedTime
             });
 
             // UI 업데이트
