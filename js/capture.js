@@ -54,6 +54,9 @@ const CaptureModule = (function() {
                 }
             });
 
+            // 비디오 해상도 변경 이벤트 처리
+            videoElement.addEventListener('resize', handleVideoResize);
+
             // 비디오 요소에 스트림 연결
             videoElement.srcObject = mediaStream;
 
@@ -127,6 +130,35 @@ const CaptureModule = (function() {
 
         if (videoElement) {
             videoElement.srcObject = null;
+        }
+    }
+
+    /**
+     * 비디오 해상도 변경 처리
+     */
+    function handleVideoResize() {
+        const newWidth = videoElement.videoWidth;
+        const newHeight = videoElement.videoHeight;
+        
+        // 크기가 실제로 변경되었는지 확인
+        if (newWidth !== videoWidth || newHeight !== videoHeight) {
+            console.log(`[Capture] 해상도 변경 감지: ${videoWidth}x${videoHeight} → ${newWidth}x${newHeight}`);
+            
+            videoWidth = newWidth;
+            videoHeight = newHeight;
+            
+            // 캔버스 크기 재설정
+            const container = previewCanvas.parentElement;
+            const containerWidth = container.clientWidth;
+            scaleRatio = containerWidth / videoWidth;
+            
+            previewCanvas.width = containerWidth;
+            previewCanvas.height = videoHeight * scaleRatio;
+            
+            // 콜백 호출
+            if (typeof onResolutionChanged === 'function') {
+                onResolutionChanged({ width: videoWidth, height: videoHeight });
+            }
         }
     }
 
@@ -219,6 +251,8 @@ const CaptureModule = (function() {
 
     // 캡처 종료 콜백
     let onCaptureEnded = null;
+    // 해상도 변경 콜백
+    let onResolutionChanged = null;
 
     /**
      * 캡처 종료 콜백 설정
@@ -226,6 +260,14 @@ const CaptureModule = (function() {
      */
     function setOnCaptureEnded(callback) {
         onCaptureEnded = callback;
+    }
+
+    /**
+     * 해상도 변경 콜백 설정
+     * @param {Function} callback
+     */
+    function setOnResolutionChanged(callback) {
+        onResolutionChanged = callback;
     }
 
     /**
@@ -261,6 +303,7 @@ const CaptureModule = (function() {
         screenToVideoCoords,
         videoToScreenCoords,
         setOnCaptureEnded,
+        setOnResolutionChanged,
         getIsCapturing,
         getVideoSize,
         getScaleRatio
