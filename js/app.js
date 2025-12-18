@@ -5,7 +5,8 @@
 
 const App = (function() {
     // 상태
-    let isAnalyzing = false;
+    let isAnalyzing = false;  // 분석 활성화 (시작됨)
+    let isPaused = false;     // 일시정지 상태
     let analysisInterval = null;
     let currentInterval = 1000; // 기본 1초
 
@@ -69,8 +70,8 @@ const App = (function() {
             btnSelectExp: document.getElementById('btnSelectExp'),
             btnSelectGold: document.getElementById('btnSelectGold'),
             btnStart: document.getElementById('btnStart'),
+            btnPause: document.getElementById('btnPause'),
             btnStop: document.getElementById('btnStop'),
-            btnReset: document.getElementById('btnReset'),
             btnPip: document.getElementById('btnPip'),
             previewWrapper: document.querySelector('.preview-wrapper'),
             previewPlaceholder: document.getElementById('previewPlaceholder'),
@@ -146,11 +147,9 @@ const App = (function() {
         });
 
         // 분석 시작/중지
-        elements.btnStart.addEventListener('click', startAnalysis);
+        elements.btnStart.addEventListener('click', startOrResumeAnalysis);
+        elements.btnPause.addEventListener('click', pauseAnalysis);
         elements.btnStop.addEventListener('click', stopAnalysis);
-
-        // 리셋 (기준값만 초기화)
-        elements.btnReset.addEventListener('click', handleReset);
 
         // 전체 초기화 (모든 설정 삭제)
         elements.btnClearAll.addEventListener('click', handleClearAll);
@@ -159,22 +158,15 @@ const App = (function() {
         elements.btnPip.addEventListener('click', handlePIP);
 
         // PIP 버튼 연결
-        PIPModule.setOnToggle(() => {
-            if (isAnalyzing) {
-                stopAnalysis();
-            } else {
-                startAnalysis();
-            }
+        PIPModule.setOnPlay(() => {
+            startOrResumeAnalysis();
         });
-        PIPModule.setOnReset(() => {
-            Analyzer.reset();
-            updateStatus('리셋됨 - 분석 재시작');
-            // 즉시 새 분석 시작
-            if (isAnalyzing) {
-                runAnalysis();
-            }
+        PIPModule.setOnPause(() => {
+            pauseAnalysis();
         });
-
+        PIPModule.setOnStop(() => {
+            stopAnalysis();
+        });
         // 레벨업 감지 콜백
         Analyzer.setOnLevelUp(() => {
             updateStatus('레벨업 감지! 추적 재시작');
@@ -344,7 +336,10 @@ const App = (function() {
     /**
      * 분석 시작
      */
-    function startAnalysis() {
+    /**
+     * 분석 시작 또는 재개
+     */
+    function startOrResumeAnalysis() {
         if (!CaptureModule.getIsCapturing()) {
             alert('먼저 화면을 선택해주세요.');
             return;
@@ -360,11 +355,31 @@ const App = (function() {
             return;
         }
 
+        // 일시정지 상태에서 재개
+        if (isPaused) {
+            isPaused = false;
+            updateButtonStates();
+            updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
+            elements.statusText.classList.add('analyzing');
+            
+            // Media Session 상태 업데이트
+            PIPModule.updateMediaSessionState(true);
+            
+            // 즉시 분석 실행 및 인터벌 재시작
+            runAnalysis();
+            analysisInterval = setInterval(runAnalysis, currentInterval);
+            return;
+        }
+
+        // 처음 시작
         isAnalyzing = true;
-        // 처음 시작할 때만 reset, resume 시에는 유지
+        isPaused = false;
+        
+        // 처음 시작할 때만 reset
         if (!Analyzer.isStarted()) {
             Analyzer.reset();
         }
+        
         updateButtonStates();
         updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
         elements.statusText.classList.add('analyzing');
@@ -380,10 +395,36 @@ const App = (function() {
     }
 
     /**
+     * 분석 일시정지 (기록 저장 안함)
+     */
+    function pauseAnalysis() {
+        if (!isAnalyzing || isPaused) return;
+
+        isPaused = true;
+        
+        if (analysisInterval) {
+            clearInterval(analysisInterval);
+            analysisInterval = null;
+        }
+
+        // Media Session 상태 업데이트
+        PIPModule.updateMediaSessionState(false);
+
+        updateButtonStates();
+        updateStatus('일시정지');
+        elements.statusText.classList.remove('analyzing');
+    }
+
+    /**
      * 분석 중지
      */
+    /**
+     * 분석 정지 (종료 - 기록 저장)
+     */
     function stopAnalysis() {
-        // 세션 기록 저장 (중지 전에)
+        if (!isAnalyzing) return;
+
+        // 세션 기록 저장 (정지 시에만)
         const record = Analyzer.createSessionRecord();
         if (record) {
             // 경험치 변동이 0이면 저장하지 않음
@@ -398,18 +439,25 @@ const App = (function() {
         }
 
         isAnalyzing = false;
+        isPaused = false;
         
         if (analysisInterval) {
             clearInterval(analysisInterval);
             analysisInterval = null;
         }
 
+        // 분석 데이터 초기화 (새 세션 준비)
+        Analyzer.reset();
+
         // Media Session 상태 업데이트
         PIPModule.updateMediaSessionState(false);
 
         updateButtonStates();
-        updateStatus('분석 중지됨');
+        updateStatus('분석 종료');
         elements.statusText.classList.remove('analyzing');
+        
+        // UI 초기화
+        elements.elapsedTime.textContent = '00:00:00';
     }
 
     /**
@@ -489,27 +537,6 @@ const App = (function() {
     /**
      * 리셋 핸들러 (기준값만 초기화 - PIP와 동일)
      */
-    function handleReset() {
-        Analyzer.reset();
-        
-        // UI 초기화
-        elements.elapsedTime.textContent = '00:00:00';
-        elements.currentExp.textContent = '-';
-        elements.expChange.textContent = '-';
-        elements.expPerHour.textContent = '-';
-        elements.timeToLevel.textContent = '-';
-        elements.currentGold.textContent = '-';
-        elements.goldChange.textContent = '-';
-        elements.goldPerHour.textContent = '-';
-
-        updateStatus('리셋됨 - 기준값 초기화');
-        
-        // 분석 중이면 즉시 새 분석 시작
-        if (isAnalyzing) {
-            runAnalysis();
-        }
-    }
-
     /**
      * 전체 초기화 핸들러 (모든 설정 삭제)
      */
@@ -559,12 +586,30 @@ const App = (function() {
         const isCapturing = CaptureModule.getIsCapturing();
         const allRegionsSet = RegionSelector.areAllRegionsSet();
         const ocrReady = OCRModule.getIsInitialized();
+        
+        // 분석 중이고 일시정지 아님 = 활성 분석 중
+        const isActivelyAnalyzing = isAnalyzing && !isPaused;
 
         elements.btnSelectExp.disabled = !isCapturing;
         elements.btnSelectGold.disabled = !isCapturing;
-        elements.btnStart.disabled = !isCapturing || !allRegionsSet || !ocrReady || isAnalyzing;
+        
+        // 시작 버튼: 분석 중이 아니거나, 일시정지 상태일 때 활성화
+        elements.btnStart.disabled = !isCapturing || !allRegionsSet || !ocrReady || isActivelyAnalyzing;
+        
+        // 일시정지 버튼: 활성 분석 중일 때만 활성화
+        elements.btnPause.disabled = !isActivelyAnalyzing;
+        
+        // 정지 버튼: 분석 시작됐으면 활성화 (일시정지 상태에서도 정지 가능)
         elements.btnStop.disabled = !isAnalyzing;
+        
         elements.btnPip.disabled = false;
+        
+        // 시작 버튼 텍스트 변경
+        if (isPaused) {
+            elements.btnStart.innerHTML = '<span class="icon">▶️</span> 재개';
+        } else {
+            elements.btnStart.innerHTML = '<span class="icon">▶️</span> 시작';
+        }
         
         // 자동 감지 버튼
         if (elements.autoDetectBtn) {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메이플랜드 EXP 트래커</title>
-    <link rel="stylesheet" href="css/styles.css?v=20251218020213">
+    <link rel="stylesheet" href="css/styles.css?v=20251218020500">
     <!-- Tesseract.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- OpenCV.js for template matching -->
@@ -81,13 +81,13 @@
 
         <div class="action-controls">
             <button id="btnStart" class="btn btn-success" disabled>
-                <span class="icon">▶️</span> 분석 시작
+                <span class="icon">▶️</span> 시작
+            </button>
+            <button id="btnPause" class="btn btn-secondary" disabled>
+                <span class="icon">⏸️</span> 일시정지
             </button>
             <button id="btnStop" class="btn btn-danger" disabled>
-                <span class="icon">⏹️</span> 분석 중지
-            </button>
-            <button id="btnReset" class="btn btn-warning">
-                <span class="icon">🔄</span> 리셋
+                <span class="icon">⏹️</span> 정지
             </button>
             <button id="btnPip" class="btn btn-info" disabled>
                 <span class="icon">📺</span> PIP 열기
@@ -253,14 +253,14 @@
     </div>
 
     <!-- JavaScript Modules -->
-    <script src="js/storage.js?v=20251218020213"></script>
-    <script src="js/capture.js?v=20251218020213"></script>
-    <script src="js/regionSelector.js?v=20251218020213"></script>
-    <script src="js/ocr.js?v=20251218020213"></script>
-    <script src="js/analyzer.js?v=20251218020213"></script>
-    <script src="js/pip.js?v=20251218020213"></script>
-    <script src="js/autoDetect.js?v=20251218020213"></script>
-    <script src="js/app.js?v=20251218020213"></script>
+    <script src="js/storage.js?v=20251218020500"></script>
+    <script src="js/capture.js?v=20251218020500"></script>
+    <script src="js/regionSelector.js?v=20251218020500"></script>
+    <script src="js/ocr.js?v=20251218020500"></script>
+    <script src="js/analyzer.js?v=20251218020500"></script>
+    <script src="js/pip.js?v=20251218020500"></script>
+    <script src="js/autoDetect.js?v=20251218020500"></script>
+    <script src="js/app.js?v=20251218020500"></script>
 </body>
 </html>
 

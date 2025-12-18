@@ -9,12 +9,10 @@ const PIPModule = (function() {
     let isAnalyzing = false;
     let showGold = true; // 메소 섹션 표시 여부
     let hasGoldDataPrev = false; // 이전 메소 데이터 존재 여부 (리사이즈 판단용)
-    let onToggle = null;
-    
     // 액션 콜백
     let onPlay = null;
     let onPause = null;
-    let onReset = null;
+    let onStop = null;
 
     // 색상 테마 (밝은 회색톤)
     const COLORS = {
@@ -142,19 +140,30 @@ const PIPModule = (function() {
             .btn:active {
                 transform: scale(0.9);
             }
-            .btn-toggle {
+            .btn-play {
                 background: ${COLORS.playBtn};
                 color: white;
-                width: 32px;
-                height: 32px;
-                font-size: 14px;
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
             }
-            .btn-toggle.playing {
+            .btn-pause {
                 background: ${COLORS.pauseBtn};
-            }
-            .btn-reset {
-                background: ${COLORS.resetBtn};
                 color: white;
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            .btn-stop {
+                background: #dc3545;
+                color: white;
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            .btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
             .btn-gold {
                 background: ${COLORS.goldColor};
@@ -232,8 +241,9 @@ const PIPModule = (function() {
                 </div>
                 
                 <div class="controls">
-                    <button class="btn btn-toggle" id="pipBtnToggle" title="시작/정지">▶</button>
-                    <button class="btn btn-reset" id="pipBtnReset" title="리셋">↺</button>
+                    <button class="btn btn-play" id="pipBtnPlay" title="시작/재개">▶</button>
+                    <button class="btn btn-pause" id="pipBtnPause" title="일시정지">⏸</button>
+                    <button class="btn btn-stop" id="pipBtnStop" title="정지">⏹</button>
                     <button class="btn btn-gold" id="pipBtnGold" title="메소 표시/숨김">💰</button>
                 </div>
             </div>
@@ -267,16 +277,21 @@ const PIPModule = (function() {
             pipWindow.document.body.innerHTML = createHTML();
 
             // 버튼 이벤트 연결
-            const btnToggle = pipWindow.document.getElementById('pipBtnToggle');
-            const btnReset = pipWindow.document.getElementById('pipBtnReset');
+            const btnPlay = pipWindow.document.getElementById('pipBtnPlay');
+            const btnPause = pipWindow.document.getElementById('pipBtnPause');
+            const btnStop = pipWindow.document.getElementById('pipBtnStop');
             const btnGold = pipWindow.document.getElementById('pipBtnGold');
 
-            btnToggle.addEventListener('click', () => {
-                if (typeof onToggle === 'function') onToggle();
+            btnPlay.addEventListener('click', () => {
+                if (typeof onPlay === 'function') onPlay();
             });
 
-            btnReset.addEventListener('click', () => {
-                if (typeof onReset === 'function') onReset();
+            btnPause.addEventListener('click', () => {
+                if (typeof onPause === 'function') onPause();
+            });
+
+            btnStop.addEventListener('click', () => {
+                if (typeof onStop === 'function') onStop();
             });
 
             btnGold.addEventListener('click', () => {
@@ -534,10 +549,9 @@ const PIPModule = (function() {
     /**
      * 액션 콜백 설정
      */
-    function setOnToggle(callback) { onToggle = callback; }
     function setOnPlay(callback) { onPlay = callback; }
     function setOnPause(callback) { onPause = callback; }
-    function setOnReset(callback) { onReset = callback; }
+    function setOnStop(callback) { onStop = callback; }
 
     /**
      * 분석 상태 업데이트 (버튼 표시용)
@@ -555,10 +569,9 @@ const PIPModule = (function() {
         openPIP,
         closePIP,
         isPIPOpen,
-        setOnToggle,
         setOnPlay,
         setOnPause,
-        setOnReset,
+        setOnStop,
         updateMediaSessionState
     };
 })();
