@@ -169,6 +169,29 @@ const Storage = (function() {
     }
 
     /**
+     * 사냥 기록 메모 업데이트
+     * @param {number} id - 기록 ID (timestamp)
+     * @param {string} memo - 메모 내용
+     * @returns {boolean}
+     */
+    function updateRecordMemo(id, memo) {
+        try {
+            const history = loadHistory();
+            const record = history.find(r => r.id === id);
+            if (record) {
+                record.memo = memo;
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                console.log('메모 업데이트됨:', id, memo);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('메모 업데이트 실패:', error);
+            return false;
+        }
+    }
+
+    /**
      * 전체 사냥 기록 삭제
      * @returns {boolean}
      */
@@ -203,6 +226,7 @@ const Storage = (function() {
         saveRecord,
         loadHistory,
         deleteRecord,
+        updateRecordMemo,
         clearHistory,
         getHistoryCount
     };

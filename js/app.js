@@ -346,10 +346,15 @@ const App = (function() {
         // 세션 기록 저장 (중지 전에)
         const record = Analyzer.createSessionRecord();
         if (record) {
-            Storage.saveRecord(record);
-            console.log('📝 사냥 기록 저장됨:', record);
-            // 기록 테이블 업데이트
-            renderHistoryTable();
+            // 경험치 변동이 0이면 저장하지 않음
+            if (record.exp.gained === 0) {
+                console.log('📝 경험치 변동 없음 - 기록 저장 안함');
+            } else {
+                Storage.saveRecord(record);
+                console.log('📝 사냥 기록 저장됨:', record);
+                // 기록 테이블 업데이트
+                renderHistoryTable();
+            }
         }
 
         isAnalyzing = false;
@@ -581,15 +586,19 @@ const App = (function() {
             const startDate = new Date(record.id);
             const dateStr = `${String(startDate.getMonth() + 1).padStart(2, '0')}/${String(startDate.getDate()).padStart(2, '0')} ${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`;
             
-            // 시간 포맷 (분 단위가 0이면 초 단위로 표시)
+            // 시간 포맷 (초 단위까지 표시)
+            const totalSeconds = record.durationSeconds || (record.duration * 60);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
             let durationStr;
-            if (record.duration >= 60) {
-                durationStr = `${Math.floor(record.duration / 60)}시간 ${record.duration % 60}분`;
-            } else if (record.duration > 0) {
-                durationStr = `${record.duration}분`;
+            if (hours > 0) {
+                durationStr = `${hours}시간 ${minutes}분 ${seconds}초`;
+            } else if (minutes > 0) {
+                durationStr = `${minutes}분 ${seconds}초`;
             } else {
-                // 1분 미만인 경우 (10초 이상)
-                durationStr = '1분 미만';
+                durationStr = `${seconds}초`;
             }
 
             // EXP/메소 포맷
@@ -597,6 +606,9 @@ const App = (function() {
             const expPerHourStr = record.exp.perHour ? Analyzer.formatCompact(record.exp.perHour) : '-';
             const mesoStr = record.meso.gained ? Analyzer.formatCompact(record.meso.gained) : '-';
             const mesoPerHourStr = record.meso.perHour ? Analyzer.formatCompact(record.meso.perHour) : '-';
+            
+            // 메모
+            const memoValue = record.memo || '';
 
             return `
                 <tr>
@@ -606,6 +618,10 @@ const App = (function() {
                     <td class="exp-value">${expPerHourStr}</td>
                     <td class="meso-value">${mesoStr}</td>
                     <td class="meso-value">${mesoPerHourStr}</td>
+                    <td class="memo-cell">
+                        <input type="text" class="memo-input" data-id="${record.id}" 
+                               value="${memoValue}" placeholder="메모" maxlength="50">
+                    </td>
                     <td>
                         <button class="delete-btn" data-id="${record.id}" title="삭제">🗑️</button>
                     </td>
@@ -621,6 +637,15 @@ const App = (function() {
                     Storage.deleteRecord(id);
                     renderHistoryTable();
                 }
+            });
+        });
+
+        // 메모 입력 이벤트 바인딩
+        elements.historyTableBody.querySelectorAll('.memo-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id, 10);
+                const memo = e.target.value.trim();
+                Storage.updateRecordMemo(id, memo);
             });
         });
     }

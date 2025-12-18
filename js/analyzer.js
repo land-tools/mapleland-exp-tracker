@@ -382,6 +382,7 @@ const Analyzer = (function() {
             startTime: formatDateTime(startData.timestamp),
             endTime: formatDateTime(endTime),
             duration: durationMinutes,
+            durationSeconds: durationSeconds, // 초 단위 시간 추가
             exp: {
                 start: startData.exp,
                 end: currentResult.exp.current,
@@ -393,7 +394,8 @@ const Analyzer = (function() {
                 end: currentResult.gold.current,
                 gained: currentResult.gold.change || 0,
                 perHour: currentResult.gold.perHour || 0
-            }
+            },
+            memo: '' // 메모 필드 추가
         };
 
         console.log('세션 기록 생성:', record);

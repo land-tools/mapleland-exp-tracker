@@ -675,4 +675,32 @@ body {
     display: block;
 }
 
+/* 메모 입력 */
+.memo-cell {
+    min-width: 100px;
+}
+
+.memo-input {
+    width: 100%;
+    min-width: 80px;
+    padding: 4px 8px;
+    border: 1px solid var(--bg-secondary);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.memo-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
+}
+
+.memo-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
 
