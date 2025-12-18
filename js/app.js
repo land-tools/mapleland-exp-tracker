@@ -93,7 +93,13 @@ const App = (function() {
             historyTableBody: document.getElementById('historyTableBody'),
             historyEmpty: document.getElementById('historyEmpty'),
             btnClearHistory: document.getElementById('btnClearHistory'),
-            historyTableWrapper: document.querySelector('.history-table-wrapper')
+            historyTableWrapper: document.querySelector('.history-table-wrapper'),
+            // 도움말 모달
+            btnHelp: document.getElementById('btnHelp'),
+            helpModal: document.getElementById('helpModal'),
+            btnCloseHelp: document.getElementById('btnCloseHelp'),
+            btnCloseHelpOk: document.getElementById('btnCloseHelpOk'),
+            chkDontShowAgain: document.getElementById('chkDontShowAgain')
         };
     }
 
@@ -210,6 +216,40 @@ const App = (function() {
 
         // 기록 전체 삭제
         elements.btnClearHistory.addEventListener('click', handleClearHistory);
+
+        // 도움말 모달
+        elements.btnHelp.addEventListener('click', openHelpModal);
+        elements.btnCloseHelp.addEventListener('click', closeHelpModal);
+        elements.btnCloseHelpOk.addEventListener('click', closeHelpModal);
+        elements.helpModal.addEventListener('click', (e) => {
+            if (e.target === elements.helpModal) {
+                closeHelpModal();
+            }
+        });
+
+        // 처음 방문 시 도움말 자동 표시
+        if (!localStorage.getItem('mapleland_help_seen')) {
+            setTimeout(() => openHelpModal(), 500);
+        }
+    }
+
+    /**
+     * 도움말 모달 열기
+     */
+    function openHelpModal() {
+        elements.helpModal.classList.add('active');
+    }
+
+    /**
+     * 도움말 모달 닫기
+     */
+    function closeHelpModal() {
+        elements.helpModal.classList.remove('active');
+        
+        // "다시 보지 않기" 체크 시 저장
+        if (elements.chkDontShowAgain.checked) {
+            localStorage.setItem('mapleland_help_seen', 'true');
+        }
     }
 
     /**

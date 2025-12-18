@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메이플랜드 EXP 트래커</title>
-    <link rel="stylesheet" href="css/styles.css?v=20251218012624">
+    <link rel="stylesheet" href="css/styles.css?v=20251218013000">
     <!-- Tesseract.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- OpenCV.js for template matching -->
@@ -34,6 +34,7 @@
         <div class="container">
         <header class="header">
             <h1>🍁 메이플랜드 EXP 트래커</h1>
+            <button id="btnHelp" class="btn-help" title="사용법">❓</button>
         </header>
 
         <div class="controls">
@@ -207,15 +208,59 @@
     <canvas id="pipCanvas" style="display: none;"></canvas>
     <video id="pipVideo" style="display: none;"></video>
 
+    <!-- 도움말 모달 -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📖 사용 방법</h2>
+                <button class="modal-close" id="btnCloseHelp">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h3>🎮 기본 사용법</h3>
+                    <ol>
+                        <li><strong>[화면 선택]</strong> 클릭 → 게임 화면 선택</li>
+                        <li>자동으로 EXP/메소 영역 감지됨</li>
+                        <li>잘못 잡혔다면 <strong>[EXP 영역]</strong> / <strong>[메소 영역]</strong> 버튼 클릭 후 드래그로 수동 설정</li>
+                        <li><strong>[분석 시작]</strong> 클릭</li>
+                        <li><strong>[PIP 열기]</strong>로 작은 창에서 실시간 확인</li>
+                    </ol>
+                </div>
+                <div class="help-section">
+                    <h3>💡 팁</h3>
+                    <ul>
+                        <li>전체화면/창모드 전환 시 <strong>자동 재감지</strong>됨</li>
+                        <li>메소는 <strong>인벤토리가 열려있어야</strong> 인식됨</li>
+                        <li>PIP 창에서 ▶️/⏹️ 버튼으로 분석 제어 가능</li>
+                        <li>사냥 기록에 <strong>메모</strong>를 남길 수 있음</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3>⚠️ 주의사항</h3>
+                    <ul>
+                        <li>Chrome/Edge 브라우저 권장</li>
+                        <li>화면 공유 중에는 브라우저를 닫지 마세요</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="chkDontShowAgain"> 다시 보지 않기
+                </label>
+                <button class="btn btn-primary" id="btnCloseHelpOk">확인</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Modules -->
-    <script src="js/storage.js?v=20251218012624"></script>
-    <script src="js/capture.js?v=20251218012624"></script>
-    <script src="js/regionSelector.js?v=20251218012624"></script>
-    <script src="js/ocr.js?v=20251218012624"></script>
-    <script src="js/analyzer.js?v=20251218012624"></script>
-    <script src="js/pip.js?v=20251218012624"></script>
-    <script src="js/autoDetect.js?v=20251218012624"></script>
-    <script src="js/app.js?v=20251218012624"></script>
+    <script src="js/storage.js?v=20251218013000"></script>
+    <script src="js/capture.js?v=20251218013000"></script>
+    <script src="js/regionSelector.js?v=20251218013000"></script>
+    <script src="js/ocr.js?v=20251218013000"></script>
+    <script src="js/analyzer.js?v=20251218013000"></script>
+    <script src="js/pip.js?v=20251218013000"></script>
+    <script src="js/autoDetect.js?v=20251218013000"></script>
+    <script src="js/app.js?v=20251218013000"></script>
 </body>
 </html>
 
