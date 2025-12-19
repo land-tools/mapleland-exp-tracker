@@ -282,3 +282,4 @@ const AutoDetect = (function() {
         setOnDetectionComplete
     };
 })();
+

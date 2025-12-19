@@ -480,14 +480,14 @@ const App = (function() {
         try {
             const regions = RegionSelector.getAllRegions();
             
-            // EXP 영역 OCR
-            const expCanvas = CaptureModule.cropRegion(regions.exp);
+            // EXP 영역 OCR (재사용 캔버스 키 전달)
+            const expCanvas = CaptureModule.cropRegion(regions.exp, 'exp');
             const expResult = await OCRModule.recognizeExp(expCanvas);
 
             // 메소 영역 OCR (영역이 설정된 경우에만)
             let goldResult = { gold: null, raw: '' };
             if (regions.gold) {
-                const goldCanvas = CaptureModule.cropRegion(regions.gold);
+                const goldCanvas = CaptureModule.cropRegion(regions.gold, 'gold');
                 goldResult = await OCRModule.recognizeGold(goldCanvas);
             }
 

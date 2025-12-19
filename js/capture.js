@@ -17,6 +17,13 @@ const CaptureModule = (function() {
     
     // 캔버스에 표시되는 스케일 비율
     let scaleRatio = 1;
+    
+    // 재사용 캔버스 (메모리 누수 방지)
+    let reusableFrameCanvas = null;
+    let reusableFrameCtx = null;
+    
+    // 크롭용 재사용 캔버스 캐시 (영역별)
+    const cropCanvasCache = new Map();
 
     /**
      * 모듈 초기화
@@ -129,8 +136,14 @@ const CaptureModule = (function() {
         }
 
         if (videoElement) {
+            videoElement.removeEventListener('resize', handleVideoResize);
             videoElement.srcObject = null;
         }
+        
+        // 메모리 정리
+        reusableFrameCanvas = null;
+        reusableFrameCtx = null;
+        cropCanvasCache.clear();
     }
 
     /**
@@ -184,17 +197,21 @@ const CaptureModule = (function() {
     function captureFrame() {
         if (!isCapturing || !videoElement) return null;
 
-        // 원본 해상도로 캡처하기 위한 임시 캔버스
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = videoWidth;
-        tempCanvas.height = videoHeight;
-        const tempCtx = tempCanvas.getContext('2d');
+        // 재사용 캔버스 초기화 또는 크기 변경 시 재생성
+        if (!reusableFrameCanvas || 
+            reusableFrameCanvas.width !== videoWidth || 
+            reusableFrameCanvas.height !== videoHeight) {
+            reusableFrameCanvas = document.createElement('canvas');
+            reusableFrameCanvas.width = videoWidth;
+            reusableFrameCanvas.height = videoHeight;
+            reusableFrameCtx = reusableFrameCanvas.getContext('2d');
+        }
         
-        tempCtx.drawImage(videoElement, 0, 0, videoWidth, videoHeight);
+        reusableFrameCtx.drawImage(videoElement, 0, 0, videoWidth, videoHeight);
         
         return {
-            canvas: tempCanvas,
-            ctx: tempCtx,
+            canvas: reusableFrameCanvas,
+            ctx: reusableFrameCtx,
             width: videoWidth,
             height: videoHeight
         };
@@ -203,24 +220,33 @@ const CaptureModule = (function() {
     /**
      * 특정 영역을 크롭하여 캔버스 반환
      * @param {Object} region - { x, y, width, height } (원본 좌표)
+     * @param {string} regionKey - 캐시 키 (옵션, 'exp' 또는 'gold')
      * @returns {HTMLCanvasElement|null}
      */
-    function cropRegion(region) {
+    function cropRegion(region, regionKey = 'default') {
         const frame = captureFrame();
         if (!frame) return null;
 
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = region.width;
-        cropCanvas.height = region.height;
-        const cropCtx = cropCanvas.getContext('2d');
+        // 캐시된 캔버스 가져오기 또는 생성
+        let cached = cropCanvasCache.get(regionKey);
+        if (!cached || cached.width !== region.width || cached.height !== region.height) {
+            cached = {
+                canvas: document.createElement('canvas'),
+                ctx: null
+            };
+            cached.canvas.width = region.width;
+            cached.canvas.height = region.height;
+            cached.ctx = cached.canvas.getContext('2d');
+            cropCanvasCache.set(regionKey, cached);
+        }
 
-        cropCtx.drawImage(
+        cached.ctx.drawImage(
             frame.canvas,
             region.x, region.y, region.width, region.height,
             0, 0, region.width, region.height
         );
 
-        return cropCanvas;
+        return cached.canvas;
     }
 
     /**
