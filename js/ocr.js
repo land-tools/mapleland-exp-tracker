@@ -10,6 +10,14 @@ const OCRModule = (function() {
 
     // 상태 변경 콜백
     let onStatusChange = null;
+    
+    // 재사용 캔버스 (메모리 누수 방지)
+    const reusableCanvases = {
+        exp: null,
+        expCtx: null,
+        gold: null,
+        goldCtx: null
+    };
 
     /**
      * Tesseract Worker 초기화
@@ -86,21 +94,35 @@ const OCRModule = (function() {
     }
 
     /**
-     * 이미지 스케일 업 (OCR 정확도 향상)
+     * 이미지 스케일 업 (OCR 정확도 향상) - 재사용 캔버스 사용
      * @param {HTMLCanvasElement} canvas
      * @param {number} scale
+     * @param {string} type - 'exp' 또는 'gold'
      * @returns {HTMLCanvasElement}
      */
-    function scaleUp(canvas, scale = 2) {
-        const scaledCanvas = document.createElement('canvas');
-        scaledCanvas.width = canvas.width * scale;
-        scaledCanvas.height = canvas.height * scale;
+    function scaleUp(canvas, scale = 2, type = 'exp') {
+        const targetWidth = canvas.width * scale;
+        const targetHeight = canvas.height * scale;
         
-        const ctx = scaledCanvas.getContext('2d');
+        // 캔버스 키 결정
+        const canvasKey = type;
+        const ctxKey = type + 'Ctx';
+        
+        // 재사용 캔버스 초기화 또는 크기 변경 시 재생성
+        if (!reusableCanvases[canvasKey] || 
+            reusableCanvases[canvasKey].width !== targetWidth || 
+            reusableCanvases[canvasKey].height !== targetHeight) {
+            reusableCanvases[canvasKey] = document.createElement('canvas');
+            reusableCanvases[canvasKey].width = targetWidth;
+            reusableCanvases[canvasKey].height = targetHeight;
+            reusableCanvases[ctxKey] = reusableCanvases[canvasKey].getContext('2d');
+        }
+        
+        const ctx = reusableCanvases[ctxKey];
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+        ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight);
         
-        return scaledCanvas;
+        return reusableCanvases[canvasKey];
     }
 
     /**
@@ -114,8 +136,8 @@ const OCRModule = (function() {
         }
 
         try {
-            // 전처리: 스케일업 + 이진화
-            let processed = scaleUp(canvas, 3);
+            // 전처리: 스케일업 + 이진화 (재사용 캔버스 사용)
+            let processed = scaleUp(canvas, 3, 'exp');
             processed = preprocessImage(processed, 100);
 
             // OCR 실행
@@ -145,8 +167,8 @@ const OCRModule = (function() {
         }
 
         try {
-            // 전처리: 스케일업 + 이진화
-            let processed = scaleUp(canvas, 3);
+            // 전처리: 스케일업 + 이진화 (재사용 캔버스 사용)
+            let processed = scaleUp(canvas, 3, 'gold');
             processed = preprocessImage(processed, 100);
 
             // OCR 실행
