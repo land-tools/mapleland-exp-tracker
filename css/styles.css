@@ -50,8 +50,6 @@ body {
 .ad-sidebar {
     width: 160px;
     flex-shrink: 0;
-    /* 광고 비활성화 - 활성화하려면 아래 줄 삭제 */
-    display: none;
 }
 
 .ad-sidebar.ad-left .ad-slot {
