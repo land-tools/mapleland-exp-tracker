@@ -24,6 +24,11 @@ const CaptureModule = (function() {
     
     // 크롭용 재사용 캔버스 캐시 (영역별)
     const cropCanvasCache = new Map();
+    
+    // 프리뷰 프레임 레이트 제한 (메모리 최적화)
+    let lastRenderTime = 0;
+    const TARGET_FPS = 15; // 60fps → 15fps로 줄임
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
     /**
      * 모듈 초기화
@@ -45,10 +50,11 @@ const CaptureModule = (function() {
                 stopCapture();
             }
 
-            // 화면 공유 요청
+            // 화면 공유 요청 (프레임 레이트 제한으로 메모리 최적화)
             mediaStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    cursor: 'never'
+                    cursor: 'never',
+                    frameRate: { ideal: 10, max: 15 }  // 60fps → 10-15fps로 제한
                 },
                 audio: false
             });
@@ -178,14 +184,19 @@ const CaptureModule = (function() {
     /**
      * 프리뷰 캔버스에 렌더링
      */
-    function renderPreview() {
+    function renderPreview(timestamp) {
         if (!isCapturing || !videoElement) return;
 
-        previewCtx.drawImage(
-            videoElement,
-            0, 0,
-            previewCanvas.width, previewCanvas.height
-        );
+        // 프레임 레이트 제한 (15fps)
+        if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
+            lastRenderTime = timestamp;
+            
+            previewCtx.drawImage(
+                videoElement,
+                0, 0,
+                previewCanvas.width, previewCanvas.height
+            );
+        }
 
         animationFrameId = requestAnimationFrame(renderPreview);
     }

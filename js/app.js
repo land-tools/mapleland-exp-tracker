@@ -11,6 +11,10 @@ const App = (function() {
     let totalPausedTime = 0;  // 총 일시정지 시간 (ms)
     let analysisInterval = null;
     let currentInterval = 1000; // 기본 1초
+    
+    // 스트림 재시작 관련 (메모리 누수 방지)
+    let streamRestartInterval = null;
+    const STREAM_RESTART_INTERVAL = 10 * 60 * 1000; // 10분마다 재시작
 
     // DOM 요소
     let elements = {};
@@ -402,6 +406,46 @@ const App = (function() {
 
         // 선택된 주기로 분석
         analysisInterval = setInterval(runAnalysis, currentInterval);
+        
+        // 스트림 재시작 타이머 (메모리 누수 방지) - 10분마다
+        if (!streamRestartInterval) {
+            streamRestartInterval = setInterval(restartStream, STREAM_RESTART_INTERVAL);
+            console.log('🕐 스트림 재시작 타이머 설정 (10분 주기)');
+        }
+    }
+
+    /**
+     * 스트림 재시작 (메모리 누수 방지)
+     * 분석 데이터와 영역은 유지하고 캡처 스트림만 재시작
+     */
+    async function restartStream() {
+        if (!CaptureModule.getIsCapturing()) return;
+        
+        console.log('🔄 메모리 최적화를 위해 스트림 재시작...');
+        updateStatus('스트림 재연결 중...');
+        
+        // 분석 일시 중단
+        if (analysisInterval) {
+            clearInterval(analysisInterval);
+            analysisInterval = null;
+        }
+        
+        // 스트림 재시작
+        CaptureModule.stopCapture();
+        const success = await CaptureModule.startCapture();
+        
+        if (success) {
+            console.log('✅ 스트림 재시작 완료');
+            
+            // 분석 중이었으면 다시 시작
+            if (isAnalyzing && !isPaused) {
+                analysisInterval = setInterval(runAnalysis, currentInterval);
+                updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
+            }
+        } else {
+            console.error('❌ 스트림 재시작 실패');
+            updateStatus('스트림 재연결 실패');
+        }
     }
 
     /**
@@ -451,10 +495,16 @@ const App = (function() {
 
         isAnalyzing = false;
         isPaused = false;
-        
+
         if (analysisInterval) {
             clearInterval(analysisInterval);
             analysisInterval = null;
+        }
+        
+        // 스트림 재시작 타이머 정리
+        if (streamRestartInterval) {
+            clearInterval(streamRestartInterval);
+            streamRestartInterval = null;
         }
 
         // 분석 데이터 초기화 (새 세션 준비)
