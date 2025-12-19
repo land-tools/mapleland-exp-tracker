@@ -1,5 +1,5 @@
 /**
- * 메이플랜드 EXP 트래커 - 메인 앱
+ * 메이플랜드 경험치 측정기 - 메인 앱
  * 모든 모듈을 통합하고 5초 주기 분석 루프를 관리합니다.
  */
 
@@ -27,7 +27,7 @@ const App = (function() {
      * 앱 초기화
      */
     async function init() {
-        console.log('🍁 메이플랜드 EXP 트래커 초기화 중...');
+        console.log('🍁 메이플랜드 경험치 측정기 초기화 중...');
 
         // 모바일 감지
         if (isMobileDevice()) {
