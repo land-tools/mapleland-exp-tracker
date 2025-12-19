@@ -27,7 +27,7 @@ const CaptureModule = (function() {
     
     // 프리뷰 프레임 레이트 제한 (메모리 최적화)
     let lastRenderTime = 0;
-    const TARGET_FPS = 15; // 60fps → 15fps로 줄임
+    const TARGET_FPS = 5; // 60fps → 5fps로 줄임 (메모리 최적화)
     const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
     /**
@@ -54,7 +54,7 @@ const CaptureModule = (function() {
             mediaStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
                     cursor: 'never',
-                    frameRate: { ideal: 10, max: 15 }  // 60fps → 10-15fps로 제한
+                    frameRate: { ideal: 5, max: 5 }  // 60fps → 5fps로 제한 (메모리 최적화)
                 },
                 audio: false
             });
