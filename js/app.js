@@ -184,16 +184,11 @@ const App = (function() {
             updateStatus('화면 캡처 종료됨');
         });
 
-        // 해상도 변경 콜백 (자동 감지 재실행)
+        // 해상도 변경 콜백
         CaptureModule.setOnResolutionChanged((newSize) => {
             console.log('해상도 변경 감지:', newSize);
-            updateStatus('해상도 변경 감지 - 자동 감지 재실행...');
-            // 영역 인디케이터 업데이트
+            // 영역 인디케이터만 업데이트 (자동 감지는 사용자가 직접)
             RegionSelector.updateIndicators();
-            // 약간의 딜레이 후 자동 감지 재실행
-            setTimeout(() => {
-                runAutoDetect();
-            }, 300);
         });
 
         // 갱신 주기 변경
@@ -264,14 +259,6 @@ const App = (function() {
             
             // 저장된 영역이 있으면 인디케이터 업데이트
             RegionSelector.updateIndicators();
-            
-            // OCR이 준비되었으면 자동 감지 실행
-            if (OCRModule.getIsInitialized()) {
-                // 약간의 딜레이 후 자동 감지 (화면이 안정화되도록)
-                setTimeout(() => {
-                    runAutoDetect();
-                }, 500);
-            }
         } else {
             // 실패 시 다시 숨김
             elements.previewWrapper.classList.remove('active');
