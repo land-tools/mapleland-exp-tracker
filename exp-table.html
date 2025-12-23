@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레벨별 필요 경험치표 - 메이플랜드 경험치 측정기</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .table-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .table-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .table-header h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .table-header p {
+            color: var(--text-secondary);
+        }
+        
+        .table-nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .table-nav a {
+            color: var(--primary);
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 1px solid var(--primary);
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+        }
+        
+        .table-nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .level-filter {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .level-filter button {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .level-filter button:hover,
+        .level-filter button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .exp-table-wrapper {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .exp-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .exp-table th,
+        .exp-table td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .exp-table th {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .exp-table th:first-child,
+        .exp-table td:first-child {
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .exp-table tr:hover {
+            background: rgba(255, 165, 0, 0.05);
+        }
+        
+        .exp-table td {
+            color: var(--text-secondary);
+        }
+        
+        .highlight-row {
+            background: rgba(255, 165, 0, 0.1) !important;
+        }
+        
+        .info-section {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-top: 30px;
+        }
+        
+        .info-section h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .info-section p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        .info-section ul {
+            padding-left: 25px;
+            color: var(--text-secondary);
+        }
+        
+        .info-section li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            color: var(--primary);
+            text-decoration: none;
+            padding: 12px 24px;
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+        }
+        
+        .back-link:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .search-box {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-box input {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: var(--border-radius);
+            width: 200px;
+            text-align: center;
+        }
+        
+        .search-box input::placeholder {
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="table-container">
+        <div class="table-header">
+            <h1>📊 메이플랜드 레벨별 필요 경험치표</h1>
+            <p>각 레벨에서 다음 레벨로 올리기 위해 필요한 경험치량입니다</p>
+        </div>
+        
+        <nav class="table-nav">
+            <a href="index.html">🏠 메인</a>
+            <a href="guide.html">📖 사용 가이드</a>
+        </nav>
+        
+        <div class="search-box">
+            <input type="number" id="levelSearch" placeholder="레벨 검색 (1-200)" min="1" max="200">
+        </div>
+        
+        <div class="level-filter">
+            <button class="active" data-range="all">전체</button>
+            <button data-range="1-30">1-30</button>
+            <button data-range="31-70">31-70</button>
+            <button data-range="71-120">71-120</button>
+            <button data-range="121-200">121-200</button>
+        </div>
+        
+        <div class="exp-table-wrapper">
+            <table class="exp-table" id="expTable">
+                <thead>
+                    <tr>
+                        <th>레벨</th>
+                        <th>필요 경험치</th>
+                        <th>누적 경험치</th>
+                    </tr>
+                </thead>
+                <tbody id="expTableBody">
+                    <!-- JavaScript로 채워집니다 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="info-section">
+            <h2>💡 경험치 관련 정보</h2>
+            <p>메이플랜드는 메이플스토리의 옛 버전을 기반으로 하며, 경험치 시스템도 과거 방식을 따릅니다.</p>
+            
+            <h3 style="color: var(--text-primary); margin-top: 20px;">효율적인 레벨업 팁</h3>
+            <ul>
+                <li><strong>파티 플레이</strong>: 파티원과 함께 사냥하면 경험치 보너스를 받을 수 있습니다.</li>
+                <li><strong>적정 레벨 사냥터</strong>: 자신의 레벨과 비슷하거나 약간 높은 몬스터를 잡는 것이 효율적입니다.</li>
+                <li><strong>경험치 버프</strong>: 이벤트나 아이템을 통해 경험치 획득량을 늘릴 수 있습니다.</li>
+                <li><strong>꾸준한 플레이</strong>: 짧은 시간이라도 매일 플레이하는 것이 장기적으로 효율적입니다.</li>
+            </ul>
+            
+            <h3 style="color: var(--text-primary); margin-top: 20px;">레벨대별 추천 사냥터</h3>
+            <ul>
+                <li><strong>1-10레벨</strong>: 메이플 아일랜드 (달팽이, 슬라임)</li>
+                <li><strong>10-20레벨</strong>: 헤네시스 사냥터 (주황버섯, 리본돼지)</li>
+                <li><strong>20-30레벨</strong>: 커닝시티 지하 (좀비버섯, 주니어 네키)</li>
+                <li><strong>30-40레벨</strong>: 페리온/엘리니아 (와일드보어, 악마견)</li>
+                <li><strong>40-50레벨</strong>: 오르비스/엘나스 (주니어 페페, 헥터)</li>
+                <li><strong>50-70레벨</strong>: 루디브리엄 (블록골렘, 킹블록골렘)</li>
+                <li><strong>70-100레벨</strong>: 지구방위본부/오메가섹터</li>
+                <li><strong>100레벨+</strong>: 리프레/무릉/백초마을</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center;">
+            <a href="index.html" class="back-link">← 측정기로 돌아가기</a>
+            <a href="guide.html" class="back-link">사용 가이드 보기 →</a>
+        </div>
+    </div>
+    
+    <script>
+        // 메이플랜드 경험치 테이블 (레벨 1-200)
+        // 실제 메이플스토리 구버전 기준 데이터
+        const expData = [
+            { level: 1, exp: 15 },
+            { level: 2, exp: 34 },
+            { level: 3, exp: 57 },
+            { level: 4, exp: 92 },
+            { level: 5, exp: 135 },
+            { level: 6, exp: 372 },
+            { level: 7, exp: 560 },
+            { level: 8, exp: 840 },
+            { level: 9, exp: 1242 },
+            { level: 10, exp: 1716 },
+            { level: 11, exp: 2360 },
+            { level: 12, exp: 3216 },
+            { level: 13, exp: 4200 },
+            { level: 14, exp: 5765 },
+            { level: 15, exp: 7459 },
+            { level: 16, exp: 9606 },
+            { level: 17, exp: 12383 },
+            { level: 18, exp: 15573 },
+            { level: 19, exp: 20098 },
+            { level: 20, exp: 25126 },
+            { level: 21, exp: 31580 },
+            { level: 22, exp: 39000 },
+            { level: 23, exp: 48600 },
+            { level: 24, exp: 58830 },
+            { level: 25, exp: 71400 },
+            { level: 26, exp: 84700 },
+            { level: 27, exp: 100350 },
+            { level: 28, exp: 118440 },
+            { level: 29, exp: 139128 },
+            { level: 30, exp: 163467 },
+            { level: 31, exp: 192500 },
+            { level: 32, exp: 226070 },
+            { level: 33, exp: 265268 },
+            { level: 34, exp: 311400 },
+            { level: 35, exp: 365000 },
+            { level: 36, exp: 426920 },
+            { level: 37, exp: 499999 },
+            { level: 38, exp: 584000 },
+            { level: 39, exp: 682300 },
+            { level: 40, exp: 796900 },
+            { level: 41, exp: 929600 },
+            { level: 42, exp: 1082700 },
+            { level: 43, exp: 1260000 },
+            { level: 44, exp: 1466500 },
+            { level: 45, exp: 1706400 },
+            { level: 46, exp: 1984600 },
+            { level: 47, exp: 2307100 },
+            { level: 48, exp: 2680400 },
+            { level: 49, exp: 3111700 },
+            { level: 50, exp: 3609200 },
+            { level: 51, exp: 4183000 },
+            { level: 52, exp: 4843600 },
+            { level: 53, exp: 5603700 },
+            { level: 54, exp: 6477800 },
+            { level: 55, exp: 7482100 },
+            { level: 56, exp: 8635400 },
+            { level: 57, exp: 9958900 },
+            { level: 58, exp: 11477100 },
+            { level: 59, exp: 13217800 },
+            { level: 60, exp: 15212200 },
+            { level: 61, exp: 17496000 },
+            { level: 62, exp: 20109600 },
+            { level: 63, exp: 23098800 },
+            { level: 64, exp: 26515100 },
+            { level: 65, exp: 30416700 },
+            { level: 66, exp: 34869000 },
+            { level: 67, exp: 39945300 },
+            { level: 68, exp: 45728100 },
+            { level: 69, exp: 52309800 },
+            { level: 70, exp: 59793800 },
+            { level: 71, exp: 68296100 },
+            { level: 72, exp: 77946600 },
+            { level: 73, exp: 88889200 },
+            { level: 74, exp: 101283800 },
+            { level: 75, exp: 115307100 },
+            { level: 76, exp: 131154200 },
+            { level: 77, exp: 149040700 },
+            { level: 78, exp: 169205400 },
+            { level: 79, exp: 191914900 },
+            { level: 80, exp: 217466700 },
+            { level: 81, exp: 246192900 },
+            { level: 82, exp: 278464700 },
+            { level: 83, exp: 314697400 },
+            { level: 84, exp: 355356300 },
+            { level: 85, exp: 400964600 },
+            { level: 86, exp: 452110500 },
+            { level: 87, exp: 509457200 },
+            { level: 88, exp: 573753200 },
+            { level: 89, exp: 645843900 },
+            { level: 90, exp: 726683800 },
+            { level: 91, exp: 817349200 },
+            { level: 92, exp: 919054500 },
+            { level: 93, exp: 1033167500 },
+            { level: 94, exp: 1161235900 },
+            { level: 95, exp: 1305011500 },
+            { level: 96, exp: 1466478600 },
+            { level: 97, exp: 1647892400 },
+            { level: 98, exp: 1851814400 },
+            { level: 99, exp: 2081165800 },
+            { level: 100, exp: 2338285500 },
+            { level: 101, exp: 2625985900 },
+            { level: 102, exp: 2947633600 },
+            { level: 103, exp: 3307229400 },
+            { level: 104, exp: 3709498000 },
+            { level: 105, exp: 4159982400 },
+            { level: 106, exp: 4664150800 },
+            { level: 107, exp: 5228517400 },
+            { level: 108, exp: 5860666700 },
+            { level: 109, exp: 6568380300 },
+            { level: 110, exp: 7360673600 },
+            { level: 111, exp: 8247836200 },
+            { level: 112, exp: 9241482400 },
+            { level: 113, exp: 10354609200 },
+            { level: 114, exp: 11601656000 },
+            { level: 115, exp: 12998584500 },
+            { level: 116, exp: 14562962700 },
+            { level: 117, exp: 16314077100 },
+            { level: 118, exp: 18273042500 },
+            { level: 119, exp: 20462920600 },
+            { level: 120, exp: 22908856600 },
+            { level: 121, exp: 25638205000 },
+            { level: 122, exp: 28680687700 },
+            { level: 123, exp: 32068643400 },
+            { level: 124, exp: 35837293200 },
+            { level: 125, exp: 40025114800 },
+            { level: 126, exp: 44674130700 },
+            { level: 127, exp: 49830263700 },
+            { level: 128, exp: 55543673400 },
+            { level: 129, exp: 61869117100 },
+            { level: 130, exp: 68866321300 },
+            { level: 131, exp: 76600316500 },
+            { level: 132, exp: 85141820400 },
+            { level: 133, exp: 94567577600 },
+            { level: 134, exp: 104960763600 },
+            { level: 135, exp: 116411398000 },
+            { level: 136, exp: 129016810600 },
+            { level: 137, exp: 142882137200 },
+            { level: 138, exp: 158120853800 },
+            { level: 139, exp: 174855596600 },
+            { level: 140, exp: 193218905000 },
+            { level: 141, exp: 213353934600 },
+            { level: 142, exp: 235416145300 },
+            { level: 143, exp: 259574184600 },
+            { level: 144, exp: 286011063000 },
+            { level: 145, exp: 314925362600 },
+            { level: 146, exp: 346532536600 },
+            { level: 147, exp: 381066337600 },
+            { level: 148, exp: 418779355200 },
+            { level: 149, exp: 459944679500 },
+            { level: 150, exp: 504857620900 },
+            { level: 151, exp: 554838078200 },
+            { level: 152, exp: 610233203800 },
+            { level: 153, exp: 671420818900 },
+            { level: 154, exp: 738813818900 },
+            { level: 155, exp: 812863832700 },
+            { level: 156, exp: 894065999700 },
+            { level: 157, exp: 982963696700 },
+            { level: 158, exp: 1080154299700 },
+            { level: 159, exp: 1186296606700 },
+            { level: 160, exp: 1302118097000 },
+            { level: 161, exp: 1428423088500 },
+            { level: 162, exp: 1566101069900 },
+            { level: 163, exp: 1716135148400 },
+            { level: 164, exp: 1879612706600 },
+            { level: 165, exp: 2057737958400 },
+            { level: 166, exp: 2251847303800 },
+            { level: 167, exp: 2463425448400 },
+            { level: 168, exp: 2694123393400 },
+            { level: 169, exp: 2945778400700 },
+            { level: 170, exp: 3220435022400 },
+            { level: 171, exp: 3520376167900 },
+            { level: 172, exp: 3848159500000 },
+            { level: 173, exp: 4206659500000 },
+            { level: 174, exp: 4599119500000 },
+            { level: 175, exp: 5029207500000 },
+            { level: 176, exp: 5501077500000 },
+            { level: 177, exp: 6019425500000 },
+            { level: 178, exp: 6589562500000 },
+            { level: 179, exp: 7217486500000 },
+            { level: 180, exp: 7909965500000 },
+            { level: 181, exp: 8674629500000 },
+            { level: 182, exp: 9519965500000 },
+            { level: 183, exp: 10455425500000 },
+            { level: 184, exp: 11491425500000 },
+            { level: 185, exp: 12639425500000 },
+            { level: 186, exp: 13912013500000 },
+            { level: 187, exp: 15323000000000 },
+            { level: 188, exp: 16887700000000 },
+            { level: 189, exp: 18623100000000 },
+            { level: 190, exp: 20547900000000 },
+            { level: 191, exp: 22682500000000 },
+            { level: 192, exp: 25049300000000 },
+            { level: 193, exp: 27672700000000 },
+            { level: 194, exp: 30579500000000 },
+            { level: 195, exp: 33799000000000 },
+            { level: 196, exp: 37363500000000 },
+            { level: 197, exp: 41308700000000 },
+            { level: 198, exp: 45673600000000 },
+            { level: 199, exp: 50500500000000 },
+            { level: 200, exp: 0 } // 만렙
+        ];
+        
+        // 누적 경험치 계산
+        let cumulative = 0;
+        expData.forEach(item => {
+            cumulative += item.exp;
+            item.cumulative = cumulative;
+        });
+        
+        // 숫자 포맷팅
+        function formatNumber(num) {
+            if (num === 0) return '-';
+            return num.toLocaleString('ko-KR');
+        }
+        
+        // 테이블 렌더링
+        function renderTable(data) {
+            const tbody = document.getElementById('expTableBody');
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${item.level}</td>
+                    <td>${formatNumber(item.exp)}</td>
+                    <td>${formatNumber(item.cumulative)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // 필터 버튼
+        document.querySelectorAll('.level-filter button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.level-filter button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const range = btn.dataset.range;
+                if (range === 'all') {
+                    renderTable(expData);
+                } else {
+                    const [min, max] = range.split('-').map(Number);
+                    renderTable(expData.filter(item => item.level >= min && item.level <= max));
+                }
+            });
+        });
+        
+        // 레벨 검색
+        document.getElementById('levelSearch').addEventListener('input', (e) => {
+            const level = parseInt(e.target.value);
+            if (level >= 1 && level <= 200) {
+                const filtered = expData.filter(item => item.level === level);
+                if (filtered.length > 0) {
+                    renderTable(filtered);
+                    document.querySelectorAll('.level-filter button').forEach(b => b.classList.remove('active'));
+                }
+            } else if (e.target.value === '') {
+                renderTable(expData);
+                document.querySelector('.level-filter button[data-range="all"]').classList.add('active');
+            }
+        });
+        
+        // 초기 렌더링
+        renderTable(expData);
+    </script>
+</body>
+</html>

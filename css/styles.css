@@ -103,6 +103,30 @@ body {
     margin-bottom: 24px;
 }
 
+.header-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(255, 165, 0, 0.1);
+}
+
 .header h1 {
     font-size: 2rem;
     font-weight: 700;
