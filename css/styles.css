@@ -50,6 +50,8 @@ body {
 .ad-sidebar {
     width: 160px;
     flex-shrink: 0;
+    /* 광고 비활성화 */
+    display: none;
 }
 
 .ad-sidebar.ad-left .ad-slot {
@@ -125,6 +127,17 @@ body {
     color: var(--primary);
     border-color: var(--primary);
     background: rgba(255, 165, 0, 0.1);
+}
+
+.nav-link-kakao {
+    border-color: #FEE500;
+    background: rgba(254, 229, 0, 0.1);
+}
+
+.nav-link-kakao:hover {
+    border-color: #FEE500;
+    background: #FEE500;
+    color: #3C1E1E;
 }
 
 .header h1 {
