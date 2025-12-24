@@ -110,7 +110,10 @@ body {
     font-size: 1.875rem;
     font-weight: 700;
     letter-spacing: -0.025em;
-    color: var(--primary);
+    background: linear-gradient(90deg, hsl(24, 100%, 50%) 0%, hsl(45, 100%, 50%) 50%, hsl(80, 70%, 45%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -122,6 +125,7 @@ body {
     height: 36px;
     object-fit: contain;
     vertical-align: middle;
+    filter: sepia(100%) saturate(300%) hue-rotate(-10deg);
 }
 
 /* 오른쪽 상단 고정 버튼 */

@@ -257,10 +257,16 @@ const PIPModule = (function() {
         }
 
         try {
+            // DPI 스케일링 고려한 초기 크기
+            const dpr = window.devicePixelRatio || 1;
+            const initialWidth = 240;
+            // 높은 DPI에서 초기 높이를 약간 더 크게
+            const initialHeight = dpr > 1 ? Math.ceil(250 * (1 + (dpr - 1) * 0.15)) : 250;
+            
             // PIP 창 열기 (초기에는 넉넉하게, 내용 렌더링 후 조절)
             pipWindow = await window.documentPictureInPicture.requestWindow({
-                width: 240,
-                height: 250
+                width: initialWidth,
+                height: initialHeight
             });
 
             // 스타일 추가
@@ -487,6 +493,10 @@ const PIPModule = (function() {
             
             if (!container) return;
             
+            // devicePixelRatio 보정 (윈도우 DPI 스케일링 대응)
+            const dpr = window.devicePixelRatio || 1;
+            const baseWidth = 240;
+            
             // 방법 1: body의 scrollHeight 사용
             let contentHeight = body.scrollHeight;
             
@@ -513,17 +523,27 @@ const PIPModule = (function() {
                 contentHeight = maxBottom;
             }
             
-            // 여유 공간 추가 (+28px)
+            // 여유 공간 추가
             contentHeight += 32;
             
             // 최소/최대 높이 제한
             contentHeight = Math.max(contentHeight, 80);
             contentHeight = Math.min(contentHeight, 400);
             
-            // 창 크기 조절
-            pipWindow.resizeTo(240, contentHeight);
+            // DPI 스케일링 보정 (1.25 이상일 때만)
+            // resizeTo는 CSS 픽셀 기준이지만, 일부 환경에서 다르게 동작할 수 있음
+            let adjustedWidth = baseWidth;
+            let adjustedHeight = contentHeight;
             
-            console.log('PIP 크기 조절:', 240, 'x', contentHeight);
+            // 높은 DPI에서는 약간의 여유 추가
+            if (dpr > 1) {
+                adjustedHeight = Math.ceil(contentHeight * (1 + (dpr - 1) * 0.1));
+            }
+            
+            // 창 크기 조절
+            pipWindow.resizeTo(adjustedWidth, adjustedHeight);
+            
+            console.log('PIP 크기 조절:', adjustedWidth, 'x', adjustedHeight, '(DPR:', dpr, ')');
         } catch (e) {
             console.log('PIP 창 크기 조절 불가:', e);
         }
