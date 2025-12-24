@@ -93,6 +93,9 @@ const App = (function() {
             goldPerHour: document.getElementById('goldPerHour'),
             intervalSelect: document.getElementById('intervalSelect'),
             btnClearAll: document.getElementById('btnClearAll'),
+            btnTheme: document.getElementById('btnTheme'),
+            btnManualToggle: document.getElementById('btnManualToggle'),
+            manualSettings: document.querySelector('.manual-settings'),
             // 기록 패널
             historyTableBody: document.getElementById('historyTableBody'),
             historyEmpty: document.getElementById('historyEmpty'),
@@ -189,6 +192,22 @@ const App = (function() {
             console.log('해상도 변경 감지:', newSize);
             // 영역 인디케이터만 업데이트 (자동 감지는 사용자가 직접)
             RegionSelector.updateIndicators();
+        });
+
+        // 테마 토글
+        elements.btnTheme.addEventListener('click', toggleTheme);
+
+        // 수동 설정 토글
+        elements.btnManualToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            elements.manualSettings.classList.toggle('open');
+        });
+
+        // 바깥 클릭시 수동 설정 패널 닫기
+        document.addEventListener('click', (e) => {
+            if (elements.manualSettings && !elements.manualSettings.contains(e.target)) {
+                elements.manualSettings.classList.remove('open');
+            }
         });
 
         // 갱신 주기 변경
@@ -748,9 +767,54 @@ const App = (function() {
     }
 
     /**
+     * 테마 토글
+     */
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        // 버튼 아이콘 업데이트
+        updateThemeButton(newTheme);
+    }
+
+    /**
+     * 테마 버튼 아이콘 업데이트
+     */
+    function updateThemeButton(theme) {
+        if (elements.btnTheme) {
+            elements.btnTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+            elements.btnTheme.title = theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환';
+        }
+    }
+
+    /**
+     * 저장된 테마 복원
+     */
+    function restoreTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        // 저장된 테마가 없으면 시스템 설정 따라감
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
+        } else {
+            // 시스템 다크모드 감지
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = prefersDark ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            updateThemeButton(theme);
+        }
+    }
+
+    /**
      * 저장된 설정 복원
      */
     function restoreSettings() {
+        // 테마 복원
+        restoreTheme();
+
         const regions = Storage.loadAllRegions();
 
         if (regions.exp) {

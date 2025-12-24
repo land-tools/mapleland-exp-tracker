@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메이플랜드 경험치 측정기 - aprud.me</title>
-    <link rel="stylesheet" href="css/styles.css?v=20251224115705">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="css/styles.css?v=20251224120000">
     <!-- Tesseract.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- OpenCV.js for template matching -->
@@ -37,28 +38,40 @@
 
         <div class="container">
         <header class="header">
-            <h1>🍁 메이플랜드 경험치 측정기 - aprud.me</h1>
-            <nav class="header-nav">
-                <button id="btnHelp" class="btn-help" title="사용법">❓</button>
-            </nav>
+            <h1><img src="assets/exp_coupon.png" alt="메이플" class="title-icon"> 메이플랜드 경험치 측정기 - aprud.me</h1>
         </header>
+
+        <!-- 오른쪽 상단 고정 버튼 -->
+        <div class="top-right-buttons">
+            <button id="btnTheme" class="btn-theme" title="테마 전환">🌙</button>
+            <button id="btnHelp" class="btn-help" title="사용법">❓</button>
+        </div>
 
         <div class="controls">
             <button id="btnSelectScreen" class="btn btn-primary">
                 <span class="icon">🖥️</span> 화면 선택
             </button>
             <button id="btnAutoDetect" class="btn btn-accent" disabled>
-                <span class="icon">🔍</span> 자동 감지
+                <span class="icon">🔍</span> 영역 감지
             </button>
-            <button id="btnSelectExp" class="btn btn-secondary" disabled>
-                <span class="icon">⚡</span> EXP 영역
-            </button>
-            <button id="btnSelectGold" class="btn btn-secondary" disabled>
-                <span class="icon">💰</span> 메소 영역
-            </button>
-            <button id="btnClearAll" class="btn btn-secondary btn-small">
-                <span class="icon">🗑️</span> 초기화
-            </button>
+            
+            <!-- 수동 설정 토글 -->
+            <div class="manual-settings">
+                <button id="btnManualToggle" class="btn btn-secondary btn-small">
+                    <span class="icon">⚙️</span> 수동 설정 <span class="toggle-arrow">▼</span>
+                </button>
+                <div class="manual-settings-panel" id="manualSettingsPanel">
+                    <button id="btnSelectExp" class="btn btn-secondary" disabled>
+                        <span class="icon">⚡</span> EXP 영역
+                    </button>
+                    <button id="btnSelectGold" class="btn btn-secondary" disabled>
+                        <span class="icon">💰</span> 메소 영역
+                    </button>
+                    <button id="btnClearAll" class="btn btn-secondary btn-small">
+                        <span class="icon">🗑️</span> 초기화
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="preview-container">
@@ -70,7 +83,7 @@
                 <div id="regionIndicators" class="region-indicators"></div>
             </div>
             <div class="preview-placeholder" id="previewPlaceholder">
-                <p>화면을 선택하면 여기에 프리뷰가 표시됩니다</p>
+                <p>인게임에서 인벤토리를 열고 화면을 선택해주세요</p>
             </div>
         </div>
 
