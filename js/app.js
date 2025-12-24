@@ -25,16 +25,58 @@ const App = (function() {
     }
 
     /**
+     * 랜딩 페이지 표시/숨김
+     */
+    function showLanding(show) {
+        const landingEl = document.getElementById('mobileNotice');
+        const pageWrapper = document.querySelector('.page-wrapper');
+        const mobileCtaSection = document.getElementById('mobileCtaSection');
+        
+        if (show) {
+            landingEl.classList.add('active');
+            pageWrapper.classList.add('hidden');
+            
+            // PC에서 랜딩 페이지를 볼 때는 "PC에서 이용해주세요" 섹션 숨기기
+            if (!isMobileDevice() && mobileCtaSection) {
+                mobileCtaSection.style.display = 'none';
+            } else if (mobileCtaSection) {
+                mobileCtaSection.style.display = '';
+            }
+        } else {
+            landingEl.classList.remove('active');
+            pageWrapper.classList.remove('hidden');
+            // URL에서 landing 파라미터 제거
+            const url = new URL(window.location);
+            url.searchParams.delete('landing');
+            window.history.replaceState({}, '', url);
+        }
+    }
+
+    /**
      * 앱 초기화
      */
     async function init() {
         console.log('🍁 메이플랜드 경험치 측정기 초기화 중...');
 
-        // 모바일 감지
-        if (isMobileDevice()) {
-            document.getElementById('mobileNotice').classList.add('active');
-            document.querySelector('.page-wrapper').classList.add('hidden');
-            console.log('📱 모바일 기기 감지 - PC 접속 안내 표시');
+        // URL 파라미터로 랜딩 페이지 표시 여부 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const showLandingPage = urlParams.get('landing') === 'true';
+
+        // 모바일 감지 또는 랜딩 페이지 요청
+        if (isMobileDevice() || showLandingPage) {
+            showLanding(true);
+            if (isMobileDevice()) {
+                console.log('📱 모바일 기기 감지 - PC 접속 안내 표시');
+            } else {
+                console.log('📄 랜딩 페이지 표시');
+            }
+            // PC에서 랜딩 페이지를 볼 때만 "앱 사용하기" 버튼 표시
+            if (!isMobileDevice()) {
+                const btnGoToApp = document.getElementById('btnGoToApp');
+                if (btnGoToApp) {
+                    btnGoToApp.style.display = 'block';
+                }
+            }
             return; // 초기화 중단
         }
 
@@ -94,6 +136,7 @@ const App = (function() {
             intervalSelect: document.getElementById('intervalSelect'),
             btnClearAll: document.getElementById('btnClearAll'),
             btnTheme: document.getElementById('btnTheme'),
+            btnLanding: document.getElementById('btnLanding'),
             btnManualToggle: document.getElementById('btnManualToggle'),
             manualSettings: document.querySelector('.manual-settings'),
             // 기록 패널
@@ -196,6 +239,26 @@ const App = (function() {
 
         // 테마 토글
         elements.btnTheme.addEventListener('click', toggleTheme);
+
+        // 랜딩 페이지 표시
+        if (elements.btnLanding) {
+            elements.btnLanding.addEventListener('click', () => {
+                showLanding(true);
+                // PC에서 랜딩 페이지를 볼 때 "앱 사용하기" 버튼 표시
+                const btnGoToApp = document.getElementById('btnGoToApp');
+                if (btnGoToApp) {
+                    btnGoToApp.style.display = 'block';
+                }
+            });
+        }
+
+        // 랜딩 페이지에서 앱으로 이동
+        const btnGoToApp = document.getElementById('btnGoToApp');
+        if (btnGoToApp) {
+            btnGoToApp.addEventListener('click', () => {
+                showLanding(false);
+            });
+        }
 
         // 수동 설정 토글
         elements.btnManualToggle.addEventListener('click', (e) => {

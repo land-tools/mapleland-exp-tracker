@@ -16,12 +16,85 @@
     -->
 </head>
 <body>
-    <!-- 모바일 접속 안내 -->
-    <div class="mobile-notice" id="mobileNotice">
-        <div class="mobile-notice-content">
-            <span class="mobile-icon">🖥️</span>
-            <h2>PC 전용 서비스입니다</h2>
-            <p>화면 캡처 기능은 PC 브라우저에서만 지원됩니다.<br>PC로 접속해주세요!</p>
+    <!-- 모바일 랜딩 페이지 -->
+    <div class="mobile-landing" id="mobileNotice">
+        <div class="mobile-landing-container">
+            <!-- 헤더 -->
+            <header class="mobile-header">
+                <img src="assets/exp_coupon.png" alt="로고" class="mobile-logo">
+                <h1>메이플랜드<br>경험치 측정기</h1>
+                <p class="mobile-tagline">aprud.me</p>
+            </header>
+
+            <!-- 데모 영상 -->
+            <section class="mobile-demo" id="demoSection">
+                <h2 class="section-title">사용 방법</h2>
+                <div class="demo-video-wrapper">
+                    <div class="demo-placeholder">
+                        <span class="demo-icon">🎬</span>
+                        <p>데모 영상 준비 중입니다</p>
+                        <small>곧 업로드 예정</small>
+                    </div>
+                    <!-- 나중에 추가할 영상:
+                    <video controls class="demo-video">
+                        <source src="assets/demo.mp4" type="video/mp4">
+                    </video>
+                    -->
+                </div>
+            </section>
+
+            <!-- 기능 소개 -->
+            <section class="mobile-features">
+                <h2 class="section-title">주요 기능</h2>
+                <div class="mobile-feature">
+                    <span class="feature-icon">📊</span>
+                    <div class="feature-text">
+                        <h3>실시간 경험치 추적</h3>
+                        <p>화면 공유로 EXP 변화를 자동 측정</p>
+                    </div>
+                </div>
+                <div class="mobile-feature">
+                    <span class="feature-icon">💰</span>
+                    <div class="feature-text">
+                        <h3>메소 수익 분석</h3>
+                        <p>사냥 중 획득한 메소를 실시간 계산</p>
+                    </div>
+                </div>
+                <div class="mobile-feature">
+                    <span class="feature-icon">⏱️</span>
+                    <div class="feature-text">
+                        <h3>시간당 효율 계산</h3>
+                        <p>EXP/시간, 메소/시간 자동 산출</p>
+                    </div>
+                </div>
+                <div class="mobile-feature">
+                    <span class="feature-icon">📺</span>
+                    <div class="feature-text">
+                        <h3>PIP 모드 지원</h3>
+                        <p>작은 창으로 게임하면서 확인</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PC 안내 (모바일에서만 표시) -->
+            <section class="mobile-cta" id="mobileCtaSection">
+                <div class="cta-box">
+                    <span class="cta-icon">🖥️</span>
+                    <h2>PC에서 이용해주세요</h2>
+                    <p>화면 캡처 기능은 PC 브라우저(Chrome, Edge)에서만 지원됩니다.</p>
+                    <p class="cta-url">aprud.me</p>
+                </div>
+            </section>
+
+            <!-- 피드백 -->
+            <footer class="mobile-footer">
+                <a href="https://open.kakao.com/o/sWW6V57h" target="_blank" class="mobile-chat-btn">
+                    💬 피드백 / 문의하기
+                </a>
+                <button id="btnGoToApp" class="mobile-app-btn" style="display: none;">
+                    🚀 앱 사용하기
+                </button>
+            </footer>
         </div>
     </div>
 
@@ -43,6 +116,7 @@
 
         <!-- 오른쪽 상단 고정 버튼 -->
         <div class="top-right-buttons">
+            <button id="btnLanding" class="btn-landing" title="랜딩 페이지">ℹ️</button>
             <button id="btnTheme" class="btn-theme" title="테마 전환">🌙</button>
             <button id="btnHelp" class="btn-help" title="사용법">❓</button>
         </div>
