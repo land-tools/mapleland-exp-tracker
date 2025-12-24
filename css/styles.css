@@ -129,15 +129,28 @@ body {
     background: rgba(255, 165, 0, 0.1);
 }
 
-.nav-link-kakao {
-    border-color: #FEE500;
-    background: rgba(254, 229, 0, 0.1);
+/* 플로팅 오픈채팅 버튼 */
+.floating-chat {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    background: #FEE500;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 1000;
 }
 
-.nav-link-kakao:hover {
-    border-color: #FEE500;
-    background: #FEE500;
-    color: #3C1E1E;
+.floating-chat:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 .header h1 {
