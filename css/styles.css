@@ -364,7 +364,7 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     margin-bottom: 24px;
-    min-height: 300px;
+    min-height: 120px;
     border: 1px solid var(--border);
 }
 
@@ -386,10 +386,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 300px;
+    min-height: 120px;
     color: var(--muted-foreground);
     font-size: 0.875rem;
-    padding: 20px;
+    padding: 16px;
     text-align: center;
 }
 

@@ -169,7 +169,9 @@ const Analyzer = (function() {
 
         // 메소 분석
         // 메소는 사냥 중 줄어들지 않는다고 가정
-        // 급격한 변화는 잘못된 인식으로 판단
+        // 한 번에 100만 메소 이상 변화하면 비정상으로 판단
+        const MESO_JUMP_THRESHOLD = 1000000; // 100만 메소
+        
         if (data.gold !== null && data.gold > 0) {
             // 첫 인식
             if (lastValidGold === null) {
@@ -177,24 +179,16 @@ const Analyzer = (function() {
                 goldIgnoreCount = 0;
                 console.log('메소 초기값:', lastValidGold);
             } 
-            // 비슷한 값 (10% 이내 변화) - 바로 업데이트
-            else if (Math.abs(data.gold - lastValidGold) / lastValidGold <= 0.1) {
-                if (data.gold >= lastValidGold) {
-                    lastValidGold = data.gold;
-                    console.log('메소 업데이트 (정상 범위):', lastValidGold);
-                }
-                goldIgnoreCount = 0;
-            }
-            // 적당한 증가 (10%~3배) - 바로 업데이트
-            else if (data.gold > lastValidGold && data.gold <= lastValidGold * 3) {
+            // 정상 증가 (10만 메소 미만 증가) - 바로 업데이트
+            else if (data.gold >= lastValidGold && data.gold - lastValidGold < MESO_JUMP_THRESHOLD) {
                 lastValidGold = data.gold;
                 goldIgnoreCount = 0;
-                console.log('메소 업데이트 (증가):', lastValidGold);
+                console.log('메소 업데이트 (정상 증가):', lastValidGold);
             }
-            // 급격한 증가 (3배 초과) - 잘못된 인식 가능성, 5회 연속 확인 필요
-            else if (data.gold > lastValidGold * 3) {
+            // 급격한 증가 (100만 메소 이상 점프) - 잘못된 인식 가능성, 5회 연속 확인 필요
+            else if (data.gold - lastValidGold >= MESO_JUMP_THRESHOLD) {
                 goldIgnoreCount++;
-                console.log('메소 급증 무시 - 유효값 유지:', lastValidGold, '(인식값:', data.gold, ', 무시횟수:', goldIgnoreCount + ')');
+                console.log('메소 급증 무시 (100만+ 점프) - 유효값 유지:', lastValidGold, '(인식값:', data.gold, ', 무시횟수:', goldIgnoreCount + ')');
                 
                 if (goldIgnoreCount >= 5) {
                     console.log('메소 5회 연속 급증 - 새 값으로 교체:', data.gold);

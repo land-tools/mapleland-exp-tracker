@@ -373,6 +373,12 @@ const App = (function() {
             }
             
             isPaused = false;
+            
+            // 프리뷰 숨기기
+            elements.previewWrapper.classList.remove('active');
+            elements.previewPlaceholder.classList.remove('hidden');
+            elements.previewPlaceholder.querySelector('p').textContent = '측정 중... PIP 창에서 확인하세요';
+            
             updateButtonStates();
             updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
             elements.statusText.classList.add('analyzing');
@@ -396,6 +402,11 @@ const App = (function() {
         if (!Analyzer.isStarted()) {
             Analyzer.reset();
         }
+        
+        // 프리뷰 숨기기 (측정 중에는 불필요)
+        elements.previewWrapper.classList.remove('active');
+        elements.previewPlaceholder.classList.remove('hidden');
+        elements.previewPlaceholder.querySelector('p').textContent = '측정 중... PIP 창에서 확인하세요';
         
         updateButtonStates();
         updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
@@ -428,6 +439,12 @@ const App = (function() {
 
         // Media Session 상태 업데이트
         PIPModule.updateMediaSessionState(false);
+        
+        // 프리뷰 다시 보이기 (영역 확인용)
+        if (CaptureModule.getIsCapturing()) {
+            elements.previewWrapper.classList.add('active');
+            elements.previewPlaceholder.classList.add('hidden');
+        }
 
         updateButtonStates();
         updateStatus('일시정지');
@@ -478,6 +495,12 @@ const App = (function() {
         
         // UI 초기화
         elements.elapsedTime.textContent = '00:00:00';
+        
+        // 프리뷰 다시 보이기
+        if (CaptureModule.getIsCapturing()) {
+            elements.previewWrapper.classList.add('active');
+            elements.previewPlaceholder.classList.add('hidden');
+        }
     }
 
     /**
@@ -611,8 +634,11 @@ const App = (function() {
         // 분석 중이고 일시정지 아님 = 활성 분석 중
         const isActivelyAnalyzing = isAnalyzing && !isPaused;
 
-        elements.btnSelectExp.disabled = !isCapturing;
-        elements.btnSelectGold.disabled = !isCapturing;
+        // 화면 선택 버튼: 활성 분석 중에는 비활성화 (공유 끊김 방지)
+        elements.btnSelectScreen.disabled = isActivelyAnalyzing;
+
+        elements.btnSelectExp.disabled = !isCapturing || isActivelyAnalyzing;
+        elements.btnSelectGold.disabled = !isCapturing || isActivelyAnalyzing;
         
         // 시작 버튼: 분석 중이 아니거나, 일시정지 상태일 때 활성화
         elements.btnStart.disabled = !isCapturing || !allRegionsSet || !ocrReady || isActivelyAnalyzing;
@@ -632,9 +658,23 @@ const App = (function() {
             elements.btnStart.innerHTML = '<span class="icon">▶️</span> 시작';
         }
         
-        // 자동 감지 버튼
+        // 자동 감지 버튼: 분석 중에는 비활성화
         if (elements.autoDetectBtn) {
-            elements.autoDetectBtn.disabled = !isCapturing || !ocrReady;
+            elements.autoDetectBtn.disabled = !isCapturing || !ocrReady || isActivelyAnalyzing;
+        }
+        
+        // 수동 설정 토글: 분석 중에는 비활성화
+        if (elements.btnManualToggle) {
+            elements.btnManualToggle.disabled = isActivelyAnalyzing;
+            // 분석 중이면 패널도 닫기
+            if (isActivelyAnalyzing && elements.manualSettings) {
+                elements.manualSettings.classList.remove('open');
+            }
+        }
+        
+        // 초기화 버튼: 분석 중에는 비활성화
+        if (elements.btnClearAll) {
+            elements.btnClearAll.disabled = isActivelyAnalyzing;
         }
     }
 
