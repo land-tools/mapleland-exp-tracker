@@ -11,8 +11,8 @@ const App = (function() {
     let totalPausedTime = 0;  // 총 일시정지 시간 (ms)
     let analysisInterval = null;
     let currentInterval = 1000; // 기본 1초
+    let memoryCleanupInterval = null; // 주기적 메모리 정리
     
-
     // DOM 요소
     let elements = {};
 
@@ -484,6 +484,98 @@ const App = (function() {
         // 선택된 주기로 분석
         analysisInterval = setInterval(runAnalysis, currentInterval);
         
+        // 주기적 메모리 정리 시작 (10분마다)
+        if (!memoryCleanupInterval) {
+            memoryCleanupInterval = setInterval(() => {
+                performMemoryCleanup();
+            }, 10 * 60 * 1000); // 10분
+        }
+        
+        // 참고: Windows CaptureService 메모리 누수는 브라우저 코드로 완전히 제어할 수 없습니다.
+        // 자동 재시작은 사용자 경험을 해치므로 제거했습니다.
+        // 필요시 사용자가 수동으로 "화면 선택" 버튼을 눌러 재시작할 수 있습니다.
+    }
+    
+    /**
+     * 주기적 메모리 정리 (Windows CaptureService 메모리 누수 완화)
+     */
+    function performMemoryCleanup() {
+        console.log('[Memory] 주기적 메모리 정리 실행');
+        
+        // Canvas 캐시 정리
+        if (CaptureModule && typeof CaptureModule.cleanupCache === 'function') {
+            CaptureModule.cleanupCache();
+        }
+        
+        // 가비지 컬렉션 유도 (가능한 경우)
+        if (window.gc) {
+            window.gc();
+        }
+        
+        // 메모리 사용량 로그 (개발 모드)
+        if (performance.memory) {
+            const used = Math.round(performance.memory.usedJSHeapSize / 1048576);
+            const total = Math.round(performance.memory.totalJSHeapSize / 1048576);
+            console.log(`[Memory] 사용량: ${used}MB / ${total}MB`);
+        }
+    }
+    
+    /**
+     * MediaStream 재시작 (Windows CaptureService 메모리 누수 완화)
+     * 사용자에게 알림을 주고 확인 후 재시작
+     * 
+     * 참고: getDisplayMedia는 재시작 시 화면 선택 다이얼로그를 띄우므로,
+     * 자동 재시작은 사용자 경험을 해칠 수 있습니다.
+     * 대신 주기적으로 사용자에게 알림을 주는 방식으로 변경했습니다.
+     */
+    async function restartCaptureStream() {
+        if (!CaptureModule.getIsCapturing() || !isAnalyzing) {
+            return; // 캡처 중이 아니거나 분석 중이 아니면 재시작 불필요
+        }
+        
+        // 사용자에게 알림 (자동 재시작 대신)
+        const shouldRestart = confirm(
+            '메모리 최적화를 위해 화면 캡처를 재시작하시겠습니까?\n\n' +
+            '재시작 시 화면 선택 다이얼로그가 다시 나타납니다.\n' +
+            '같은 화면을 선택하시면 분석이 계속됩니다.\n\n' +
+            '취소하시면 계속 사용하실 수 있지만, 메모리 사용량이 증가할 수 있습니다.'
+        );
+        
+        if (!shouldRestart) {
+            console.log('[Capture] 사용자가 재시작 취소');
+            return;
+        }
+        
+        console.log('[Capture] MediaStream 재시작 (사용자 확인)');
+        updateStatus('스트림 재시작 중... (메모리 최적화)');
+        
+        // 현재 영역 정보 저장
+        const regions = RegionSelector.getAllRegions();
+        
+        // 캡처 중지
+        CaptureModule.stopCapture();
+        
+        // 잠시 대기 (OS가 리소스를 정리할 시간 제공)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 캡처 재시작 (화면 선택 다이얼로그 표시)
+        const success = await CaptureModule.startCapture();
+        
+        if (success) {
+            updateStatus('스트림 재시작 완료');
+            
+            // 영역 인디케이터 업데이트
+            if (regions.exp || regions.gold) {
+                RegionSelector.updateIndicators();
+            }
+            
+            console.log('[Capture] MediaStream 재시작 완료');
+        } else {
+            updateStatus('스트림 재시작 실패 - 수동으로 다시 선택해주세요');
+            console.error('[Capture] MediaStream 재시작 실패');
+            // 분석 중지 (스트림이 없으면 분석 불가)
+            pauseAnalysis();
+        }
     }
 
     /**
@@ -545,6 +637,14 @@ const App = (function() {
             analysisInterval = null;
         }
         
+        // 메모리 정리 인터벌 정리
+        if (memoryCleanupInterval) {
+            clearInterval(memoryCleanupInterval);
+            memoryCleanupInterval = null;
+        }
+        
+        // 최종 메모리 정리 실행
+        performMemoryCleanup();
 
         // 분석 데이터 초기화 (새 세션 준비)
         Analyzer.reset();

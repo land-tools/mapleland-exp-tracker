@@ -50,22 +50,29 @@ const CaptureModule = (function() {
                 stopCapture();
             }
 
-            // 화면 공유 요청 (프레임 레이트 제한으로 메모리 최적화)
+            // 화면 공유 요청 (프레임 레이트 및 해상도 제한으로 메모리 최적화)
             mediaStream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
                     cursor: 'never',
-                    frameRate: { ideal: 5, max: 5 }  // 60fps → 5fps로 제한 (메모리 최적화)
+                    frameRate: { ideal: 3, max: 3 },  // 5fps → 3fps로 더 낮춤 (메모리 최적화)
+                    width: { ideal: 1920, max: 1920 },  // 최대 해상도 제한
+                    height: { ideal: 1080, max: 1080 }
                 },
                 audio: false
             });
 
             // 스트림 종료 이벤트 처리
-            mediaStream.getVideoTracks()[0].addEventListener('ended', () => {
-                stopCapture();
-                if (typeof onCaptureEnded === 'function') {
-                    onCaptureEnded();
-                }
-            });
+            const videoTrack = mediaStream.getVideoTracks()[0];
+            if (videoTrack) {
+                const handleTrackEnded = () => {
+                    videoTrack.removeEventListener('ended', handleTrackEnded);
+                    stopCapture();
+                    if (typeof onCaptureEnded === 'function') {
+                        onCaptureEnded();
+                    }
+                };
+                videoTrack.addEventListener('ended', handleTrackEnded);
+            }
 
             // 비디오 해상도 변경 이벤트 처리
             videoElement.addEventListener('resize', handleVideoResize);
@@ -136,20 +143,63 @@ const CaptureModule = (function() {
             animationFrameId = null;
         }
 
+        // MediaStream 완전 정리 (Windows CaptureService 메모리 누수 방지)
         if (mediaStream) {
-            mediaStream.getTracks().forEach(track => track.stop());
+            const tracks = mediaStream.getTracks();
+            tracks.forEach(track => {
+                // 이벤트 리스너 제거
+                track.removeEventListener('ended', stopCapture);
+                // 트랙 중지
+                track.stop();
+                // 트랙 제거
+                mediaStream.removeTrack(track);
+            });
             mediaStream = null;
         }
 
+        // Video element 완전 정리
         if (videoElement) {
+            // 이벤트 리스너 제거
             videoElement.removeEventListener('resize', handleVideoResize);
+            
+            // 비디오 정지 및 버퍼 정리
+            videoElement.pause();
             videoElement.srcObject = null;
+            videoElement.load(); // 버퍼 완전 정리
+            
+            // 메타데이터 초기화
+            videoWidth = 0;
+            videoHeight = 0;
         }
         
-        // 메모리 정리
-        reusableFrameCanvas = null;
-        reusableFrameCtx = null;
+        // Canvas 메모리 정리
+        if (previewCtx) {
+            // Canvas 초기화로 메모리 해제
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        }
+        
+        // 재사용 캔버스 정리
+        if (reusableFrameCanvas) {
+            reusableFrameCtx = null;
+            reusableFrameCanvas.width = 0;
+            reusableFrameCanvas.height = 0;
+            reusableFrameCanvas = null;
+        }
+        
+        // 크롭 캔버스 캐시 정리
+        cropCanvasCache.forEach((cached, key) => {
+            if (cached.canvas) {
+                cached.ctx = null;
+                cached.canvas.width = 0;
+                cached.canvas.height = 0;
+            }
+        });
         cropCanvasCache.clear();
+        
+        // 가비지 컬렉션 유도 (가능한 경우)
+        if (window.gc) {
+            window.gc();
+        }
     }
 
     /**
@@ -187,15 +237,23 @@ const CaptureModule = (function() {
     function renderPreview(timestamp) {
         if (!isCapturing || !videoElement) return;
 
-        // 프레임 레이트 제한 (15fps)
+        // 프레임 레이트 제한 (5fps)
         if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
             lastRenderTime = timestamp;
             
-            previewCtx.drawImage(
-                videoElement,
-                0, 0,
-                previewCanvas.width, previewCanvas.height
-            );
+            // 비디오가 준비된 상태에서만 렌더링
+            if (videoElement.readyState >= 2) {
+                try {
+                    previewCtx.drawImage(
+                        videoElement,
+                        0, 0,
+                        previewCanvas.width, previewCanvas.height
+                    );
+                } catch (error) {
+                    // 렌더링 오류 시 무시 (비디오가 정리 중일 수 있음)
+                    console.warn('[Capture] 프리뷰 렌더링 오류:', error);
+                }
+            }
         }
 
         animationFrameId = requestAnimationFrame(renderPreview);
@@ -230,13 +288,13 @@ const CaptureModule = (function() {
 
     /**
      * 특정 영역을 크롭하여 캔버스 반환
+     * 메모리 최적화: 전체 화면 캡처 없이 ROI 영역만 직접 캡처
      * @param {Object} region - { x, y, width, height } (원본 좌표)
      * @param {string} regionKey - 캐시 키 (옵션, 'exp' 또는 'gold')
      * @returns {HTMLCanvasElement|null}
      */
     function cropRegion(region, regionKey = 'default') {
-        const frame = captureFrame();
-        if (!frame) return null;
+        if (!isCapturing || !videoElement || !region) return null;
 
         // 캐시된 캔버스 가져오기 또는 생성
         let cached = cropCanvasCache.get(regionKey);
@@ -251,11 +309,19 @@ const CaptureModule = (function() {
             cropCanvasCache.set(regionKey, cached);
         }
 
-        cached.ctx.drawImage(
-            frame.canvas,
-            region.x, region.y, region.width, region.height,
-            0, 0, region.width, region.height
-        );
+        // ROI 영역만 직접 캡처 (전체 화면 캡처 안 함)
+        // drawImage(videoElement, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+        // videoElement에서 region 영역만 직접 그리기
+        try {
+            cached.ctx.drawImage(
+                videoElement,
+                region.x, region.y, region.width, region.height,  // source rect (videoElement에서)
+                0, 0, region.width, region.height                // dest rect (canvas에)
+            );
+        } catch (error) {
+            console.warn('[Capture] ROI 캡처 오류:', error);
+            return null;
+        }
 
         return cached.canvas;
     }
@@ -331,6 +397,32 @@ const CaptureModule = (function() {
         return scaleRatio;
     }
 
+    /**
+     * 캐시 정리 (주기적 메모리 정리용)
+     */
+    function cleanupCache() {
+        // 크롭 캔버스 캐시 정리
+        cropCanvasCache.forEach((cached, key) => {
+            if (cached.canvas) {
+                cached.ctx = null;
+                cached.canvas.width = 0;
+                cached.canvas.height = 0;
+            }
+        });
+        cropCanvasCache.clear();
+        
+        // 재사용 프레임 캔버스는 유지 (성능상 필요)
+        // 대신 크기만 확인하고 필요시 재생성
+        if (reusableFrameCanvas && 
+            (reusableFrameCanvas.width > 3840 || reusableFrameCanvas.height > 2160)) {
+            // 너무 큰 캔버스는 정리
+            reusableFrameCtx = null;
+            reusableFrameCanvas.width = 0;
+            reusableFrameCanvas.height = 0;
+            reusableFrameCanvas = null;
+        }
+    }
+
     return {
         init,
         startCapture,
@@ -343,7 +435,8 @@ const CaptureModule = (function() {
         setOnResolutionChanged,
         getIsCapturing,
         getVideoSize,
-        getScaleRatio
+        getScaleRatio,
+        cleanupCache
     };
 })();
 
