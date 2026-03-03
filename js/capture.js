@@ -25,6 +25,9 @@ const CaptureModule = (function() {
     // 크롭용 재사용 캔버스 캐시 (영역별)
     const cropCanvasCache = new Map();
     
+    // 프리뷰 렌더링 활성 여부 (분석 중에는 false로 비디오 일시정지)
+    let isPreviewActive = false;
+
     // 프리뷰 프레임 레이트 제한 (메모리 최적화)
     let lastRenderTime = 0;
     const TARGET_FPS = 5; // 60fps → 5fps로 줄임 (메모리 최적화)
@@ -121,6 +124,7 @@ const CaptureModule = (function() {
             previewCanvas.height = videoHeight * scaleRatio;
 
             isCapturing = true;
+            isPreviewActive = true;
 
             // 프리뷰 렌더링 시작
             renderPreview();
@@ -137,6 +141,7 @@ const CaptureModule = (function() {
      */
     function stopCapture() {
         isCapturing = false;
+        isPreviewActive = false;
 
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
@@ -235,7 +240,7 @@ const CaptureModule = (function() {
      * 프리뷰 캔버스에 렌더링
      */
     function renderPreview(timestamp) {
-        if (!isCapturing || !videoElement) return;
+        if (!isCapturing || !videoElement || !isPreviewActive) return;
 
         // 프레임 레이트 제한 (5fps)
         if (timestamp - lastRenderTime >= FRAME_INTERVAL) {
@@ -398,6 +403,88 @@ const CaptureModule = (function() {
     }
 
     /**
+     * 프리뷰 일시정지 (rAF 루프 중단 + 비디오 일시정지)
+     * 분석 모드에서 호출하여 Windows CaptureService 부하를 줄임
+     */
+    function pausePreview() {
+        if (!isCapturing) return;
+
+        isPreviewActive = false;
+
+        // rAF 루프 중단
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+
+        // 비디오 일시정지 → CaptureService에 프레임 요청 중단
+        if (videoElement && !videoElement.paused) {
+            videoElement.pause();
+            console.log('[Capture] 프리뷰 일시정지 (비디오 정지)');
+        }
+    }
+
+    /**
+     * 프리뷰 재개 (rAF 루프 재시작 + 비디오 재생)
+     * 분석 일시정지/정지 시 호출
+     */
+    function resumePreview() {
+        if (!isCapturing || isPreviewActive) return;
+
+        isPreviewActive = true;
+
+        // 비디오 재생
+        if (videoElement && videoElement.paused) {
+            videoElement.play().then(() => {
+                console.log('[Capture] 프리뷰 재개 (비디오 재생)');
+            }).catch(err => {
+                console.warn('[Capture] 비디오 재생 실패:', err);
+            });
+        }
+
+        // rAF 루프 재시작
+        renderPreview();
+    }
+
+    /**
+     * 분석용 프레임 준비 (비디오가 정지 상태이면 잠깐 재생 후 새 프레임 대기)
+     * @returns {Promise<void>}
+     */
+    async function prepareFrame() {
+        if (!isCapturing || !videoElement) return;
+
+        // 이미 재생 중이면 바로 반환
+        if (!videoElement.paused) return;
+
+        // 비디오 잠깐 재생
+        await videoElement.play();
+
+        // requestVideoFrameCallback으로 새 프레임이 실제로 도착할 때까지 대기
+        if ('requestVideoFrameCallback' in videoElement) {
+            await new Promise(resolve => {
+                videoElement.requestVideoFrameCallback(() => {
+                    resolve();
+                });
+            });
+        } else {
+            // requestVideoFrameCallback 미지원 시 짧은 대기
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
+    /**
+     * 프레임 캡처 후 정리 (프리뷰 비활성 상태면 비디오 다시 일시정지)
+     */
+    function releaseFrame() {
+        if (!isCapturing || !videoElement) return;
+
+        // 프리뷰가 비활성인 경우에만 비디오 정지 (분석 모드)
+        if (!isPreviewActive && !videoElement.paused) {
+            videoElement.pause();
+        }
+    }
+
+    /**
      * 캐시 정리 (주기적 메모리 정리용)
      */
     function cleanupCache() {
@@ -436,7 +523,11 @@ const CaptureModule = (function() {
         getIsCapturing,
         getVideoSize,
         getScaleRatio,
-        cleanupCache
+        cleanupCache,
+        pausePreview,
+        resumePreview,
+        prepareFrame,
+        releaseFrame
     };
 })();
 

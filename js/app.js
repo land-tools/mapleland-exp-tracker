@@ -436,19 +436,20 @@ const App = (function() {
             }
             
             isPaused = false;
-            
-            // 프리뷰 숨기기
+
+            // 프리뷰 숨기기 + 비디오 일시정지 (CaptureService 부하 감소)
             elements.previewWrapper.classList.remove('active');
             elements.previewPlaceholder.classList.remove('hidden');
             elements.previewPlaceholder.querySelector('p').textContent = '측정 중... PIP 창에서 확인하세요';
-            
+            CaptureModule.pausePreview();
+
             updateButtonStates();
             updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
             elements.statusText.classList.add('analyzing');
-            
+
             // Media Session 상태 업데이트
             PIPModule.updateMediaSessionState(true);
-            
+
             // 즉시 분석 실행 및 인터벌 재시작
             runAnalysis();
             analysisInterval = setInterval(runAnalysis, currentInterval);
@@ -466,11 +467,12 @@ const App = (function() {
             Analyzer.reset();
         }
         
-        // 프리뷰 숨기기 (측정 중에는 불필요)
+        // 프리뷰 숨기기 + 비디오 일시정지 (CaptureService 부하 감소)
         elements.previewWrapper.classList.remove('active');
         elements.previewPlaceholder.classList.remove('hidden');
         elements.previewPlaceholder.querySelector('p').textContent = '측정 중... PIP 창에서 확인하세요';
-        
+        CaptureModule.pausePreview();
+
         updateButtonStates();
         updateStatus(`분석 중... (${currentInterval / 1000}초 주기)`);
         elements.statusText.classList.add('analyzing');
@@ -595,8 +597,9 @@ const App = (function() {
         // Media Session 상태 업데이트
         PIPModule.updateMediaSessionState(false);
         
-        // 프리뷰 다시 보이기 (영역 확인용)
+        // 프리뷰 재개 + 다시 보이기 (영역 확인용)
         if (CaptureModule.getIsCapturing()) {
+            CaptureModule.resumePreview();
             elements.previewWrapper.classList.add('active');
             elements.previewPlaceholder.classList.add('hidden');
         }
@@ -659,8 +662,9 @@ const App = (function() {
         // UI 초기화
         elements.elapsedTime.textContent = '00:00:00';
         
-        // 프리뷰 다시 보이기
+        // 프리뷰 재개 + 다시 보이기
         if (CaptureModule.getIsCapturing()) {
+            CaptureModule.resumePreview();
             elements.previewWrapper.classList.add('active');
             elements.previewPlaceholder.classList.add('hidden');
         }
@@ -674,15 +678,27 @@ const App = (function() {
 
         try {
             const regions = RegionSelector.getAllRegions();
-            
+
+            // 비디오 프레임 준비 (정지 상태이면 잠깐 재생 후 새 프레임 대기)
+            await CaptureModule.prepareFrame();
+
             // EXP 영역 OCR (재사용 캔버스 키 전달)
             const expCanvas = CaptureModule.cropRegion(regions.exp, 'exp');
+
+            // 메소 영역 크롭 (영역이 설정된 경우에만)
+            let goldCanvas = null;
+            if (regions.gold) {
+                goldCanvas = CaptureModule.cropRegion(regions.gold, 'gold');
+            }
+
+            // 프레임 캡처 완료 → 비디오 다시 일시정지 (OCR 처리 동안 CaptureService 부하 없음)
+            CaptureModule.releaseFrame();
+
             const expResult = await OCRModule.recognizeExp(expCanvas);
 
-            // 메소 영역 OCR (영역이 설정된 경우에만)
+            // 메소 영역 OCR
             let goldResult = { gold: null, raw: '' };
-            if (regions.gold) {
-                const goldCanvas = CaptureModule.cropRegion(regions.gold, 'gold');
+            if (goldCanvas) {
                 goldResult = await OCRModule.recognizeGold(goldCanvas);
             }
 
