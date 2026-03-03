@@ -92,11 +92,19 @@ body {
     min-width: 0;
 }
 
-/* 광고 사이드바 - 비활성화 */
+/* 광고 사이드바 (카카오 애드핏) */
 .ad-sidebar {
     width: 160px;
     flex-shrink: 0;
-    display: none;
+    position: sticky;
+    top: 24px;
+    align-self: flex-start;
+}
+
+@media (max-width: 1300px) {
+    .ad-sidebar {
+        display: none;
+    }
 }
 
 /* Header */
